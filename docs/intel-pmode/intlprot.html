@@ -1,0 +1,1890 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<!--last modified on Saturday, November 06, 1999 06:08 PM -->
+<HTML>
+
+<HEAD>
+	<META HTTP-EQUIV="Content-Type" CONTENT="text/html;CHARSET=iso-8859-1">
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="keywords" CONTENT="Intel386(TM), Intel486(TM), and Pentium(TM) processors">
+
+	<META NAME="GENERATOR" Content="Visual Page 2.0 for Windows">
+	<META NAME="Author" Content="Ashod H. Nakashian">
+	<TITLE>Protected Mode Programming</TITLE>
+</HEAD>
+
+<BODY BACKGROUND="whitebg.gif" TEXT="black" BGCOLOR="white" LINK="#009999" ALINK="#00CCCC" VLINK="#000099" MARGINWIDTH="0"
+<CENTER>
+
+<CENTER>
+<P>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0" WIDTH="754">
+	<TR>
+		<TD WIDTH="754">
+			<P><IMG SRC="sideb.gif" WIDTH="16" HEIGHT="113" ALIGN="LEFT" BORDER="0"></P>
+			<P><B><FONT SIZE="6">Protected Mode programming for the intel386</FONT><SUP>tm</SUP><FONT SIZE="6">, intel486</FONT><SUP>tm</SUP><FONT
+			SIZE="6"> AND pentium</FONT><SUP>tm</SUP><FONT SIZE="6"> processors</FONT></B></P>
+			<P><B><FONT SIZE="3"><BR>
+			<BR>
+			Title:Protected Mode programming for the intel386, intel486 and pentium processors.<BR>
+			Intel Ref. No:</FONT></B><U><FONT SIZE="3"> </FONT></U><B><FONT SIZE="3">[7143.doc] [ ] [mfg_PB]<BR>
+			Faxback No:7143<BR>
+			Prods. covered: 80386, 80486, Pentium<BR>
+			Date:</FONT></B><U><FONT SIZE="3"> </FONT></U><B><FONT SIZE="3">10/11/93<BR>
+			Related Info:See Faxback documents [7144], [7145][7146]<BR>
+			Keywords:Protected Mode, 386, 486, Pentium, software</FONT></B>&nbsp;</P>
+			<P><B>FaxBACK* Service:<BR>
+			</B>Quick, Simple, Easy. Available 24 hours a day!<BR>
+			1-800-628-2283 or (916)356-3105 (US or Canada)<BR>
+			+44(0)793-496646 (Europe)<BR>
+			<BR>
+			<B>Bulletin Board Services (BBS):<BR>
+			</B>Latest Product Information and Support, 24 hours a day!<BR>
+			(916)356-3600 (US or Canada)<BR>
+			+44(0)793-496340 (Europe)<BR>
+			Download the Latest <B>FaxBACK </B>Catalogs and <B>FaxFind </B>Windows Utility<BR>
+			1-800-897-2536 (US or Canada)<BR>
+			Europe, call BBS # above and look under FaxBACK area in File Locator<BR>
+			<BR>
+			<B>Literature Hotline:<BR>
+			</B>For Current Literature Guide Order No. 210620<BR>
+			1-800-548-4725 (US or Canada)<BR>
+			Europe, contact local Intel office</P>
+			<P>* Other brands and names are the property of their respective owners.</P>
+			<P><IMG SRC="intel.gif" WIDTH="138" HEIGHT="70" ALIGN="BOTTOM" BORDER="0"></P>
+			<P><BR>
+			<IMG SRC="intlprot.gif" WIDTH="531" HEIGHT="389" ALIGN="BOTTOM" BORDER="0"></P>
+			<P>for the<B><BR>
+			Intel386</B> ,<B><BR>
+			Intel486</B> , and<B><BR>
+			Pentium Processors</B> <FONT SIZE="2">September 1993,<BR>
+			Version 1.0</FONT><BR>
+			<FONT SIZE="1">Intel Corporation makes no warranty for the use of its products and assumes no responsibility for
+			any errors which may appear in this document, nor does it make a commitment to update the information contained
+			herein.<BR>
+			Intel retains the right to make changes to these specifications at any time, without notice.<BR>
+			Contact your local Intel sales office or your distributor to obtain the latest specifications before placing your
+			product order.<BR>
+			MDS is an ordering code only and is not used as a product name or trademark of Intel Corporation.<BR>
+			Intel Corporation and Intel's FASTPATH are not affiliated with Kinetics, a division of Excelan, Inc. or its FASTPATH
+			trademark or products.<BR>
+			*Other brands and names are the property of their respective owners.</FONT></P>
+			<P><FONT SIZE="1">&copy; INTEL CORPORATION, 1993</FONT></P>
+			<P><B><FONT SIZE="4">Contents</FONT></B></P>
+			<UL>
+				<B><A HREF="#1.%20Overview">1. Overview</A></B>
+				<UL>
+					<A HREF="#1.1.%2032-Bit%20Protected%20Mode"><FONT SIZE="2">1.1. 32-Bit Protected Mode</FONT></A><FONT SIZE="4"><BR>
+					</FONT><A HREF="#1.2.%20Protected-Mode%20Environments"><FONT SIZE="2">1.2. Protected-Mode Environments</FONT></A>
+					<UL>
+						<A HREF="#1.2.1.%20DOS%20and%20DOS%20Extenders"><FONT SIZE="2">1.2.1. DOS and DOS Extenders</FONT></A><FONT SIZE="4"><BR>
+						</FONT><A HREF="#1.2.2.%20Windows%20and%20Win32s"><FONT SIZE="2">1.2.2. Windows and Win32s</FONT></A><FONT SIZE="4"><BR>
+						</FONT><A HREF="#1.2.3.%20UNIX,%20OS/2%202.x,%20and%20Windo"><FONT SIZE="2">1.2.3. UNIX, OS/2 2.x, and Windows
+						NT</FONT></A>
+					</UL>
+					<A HREF="#1.3.%20Development%20Tools%20for%20Prote"><FONT SIZE="2">1.3. Development Tools for Protected Mode</FONT></A><FONT
+					SIZE="4"><BR>
+					</FONT><A HREF="#1.4.%20Tools%20Standardization"><FONT SIZE="2">1.4. Tools Standardization</FONT></A>
+				</UL>
+				<B><A HREF="#2.%20The%20Example%20Application">2. The Example Application</A><BR>
+				<A HREF="#3.%20Timer%20Module">3. Timer Module</A></B>
+				<UL>
+					<A HREF="#3.1.%20Applying%20Protection"><FONT SIZE="2">3.1. Applying Protection to Interrupt Procedures</FONT></A><FONT
+					SIZE="4"><BR>
+					</FONT><A HREF="#3.2.%20Example%20Code"><FONT SIZE="2">3.2. Example Code</FONT></A>
+				</UL>
+				<B><A HREF="#4.%20Scheduler%20Module">4. Scheduler Module</A></B>
+				<UL>
+					<A HREF="#4.1.%20Applying%20Protection"><FONT SIZE="2">4.1. Applying Protection to the Scheduler</FONT></A><FONT
+					SIZE="4"><BR>
+					</FONT><A HREF="#4.2.%20Example%20Code"><FONT SIZE="2">4.2. Example Code</FONT></A>
+				</UL>
+				<B><A HREF="#Exception%20Handlers">5. Exception Handlers</A></B>
+				<UL>
+					<A HREF="#Exception%20Handlers"><FONT SIZE="2">5.1. Applying Protection to Exception Handlers</FONT><FONT SIZE="4"><BR>
+					</FONT><FONT SIZE="2">5.2. Example Code</FONT></A>
+				</UL>
+				<B><A HREF="#6.%20Sound%20Module">6. Sound Module</A></B>
+				<UL>
+					<A HREF="#6.1.%20Applying%20Protection"><FONT SIZE="2">6.1. Applying Protection to a Device Driver</FONT></A><FONT
+					SIZE="4"><BR>
+					</FONT><A HREF="#6.2.%20Example%20Code"><FONT SIZE="2">6.2. Example Code</FONT></A>
+				</UL>
+				<B><A HREF="#7.%20The%20Experiment%20Task">7. The Experiment Task</A></B>
+				<UL>
+					<A HREF="#7.1.%20Applying%20Protection"><FONT SIZE="2">7.1. Applying Protection to Application Programs</FONT></A><FONT
+					SIZE="4"><BR>
+					</FONT><A HREF="#7.2.%20Example%20Code"><FONT SIZE="2">7.2. Example Code</FONT></A>
+				</UL>
+				<B><A HREF="#8.%20Protected%20Mode%20Startup">8. Protected Mode Startup and Termination Module</A></B>
+				<UL>
+					<A HREF="#8.1.%20Applying%20Protection"><FONT SIZE="2">8.1. Applying Protection to Kernel Tasks</FONT></A><FONT
+					SIZE="4"><BR>
+					</FONT><A HREF="#8.2.%20Example%20Code"><FONT SIZE="2">8.2. Example Code</FONT></A>
+				</UL>
+				<B><A HREF="#9.%20Real%20Mode%20Startup">9. Real Mode Startup and Termination Module</A></B>
+				<UL>
+					<A HREF="#9.1.%20Applying%20Protection"><FONT SIZE="2">9.1. Applying Protection to Startup and Termination</FONT></A><FONT
+					SIZE="4"><BR>
+					</FONT><A HREF="#9.2.%20Example%20Code"><FONT SIZE="2">9.2. Example Code</FONT></A>
+				</UL>
+				<B><A HREF="#10.%20Compiling%20and%20Executing">10. Compiling and Executing the Example</A><BR>
+				<A HREF="#11.%20Where%20to%20go%20from%20here">11. Where to Go From Here</A><BR>
+				<A HREF="#12.%20About%20the%20Authors">12. About the Authors</A><BR>
+				<A HREF="#13.%20Bibliography">13. Bibliography</A></B>
+			</UL>
+			<P><FONT SIZE="4"><BR>
+			List of Figures</FONT></P>
+			<OL>
+				<LI><A HREF="#Figure%201.%20Duty%20Cycle%20of%20Sound"><FONT SIZE="2">Duty Cycle of Sound Waves</FONT></A>
+			</OL>
+			<P><FONT SIZE="4">List of Tables</FONT></P>
+			<OL>
+				<LI><A HREF="#Table%201.%20Tools%20Alternatives"><FONT SIZE="2">Tools Alternatives</FONT></A>
+				<LI><A HREF="#Table%202.%20Protection%20Structure"><FONT SIZE="2">Protection Structure</FONT></A>
+				<LI><A HREF="#Table%203.%20Tested%20Configurations"><FONT SIZE="2">Tested Configurations</FONT></A>
+			</OL>
+			<P><FONT SIZE="4">List of Examples</FONT>
+			<OL>
+				<LI><A HREF="#Example%201.%20Jump%20Macros"><FONT SIZE="2">Jump Macros</FONT></A>
+				<LI><A HREF="#Example%202.%20Timer%20Module"><FONT SIZE="2">Timer Module</FONT></A>
+				<LI><A HREF="#Example%203.%20Scheduler"><FONT SIZE="2">Scheduler</FONT></A>
+				<LI><A HREF="#Example%204.%20Exception%20Handlers"><FONT SIZE="2">Exception Handlers</FONT></A>
+				<LI><A HREF="#Example%205.%20Sound%20Device%20Driver"><FONT SIZE="2">Sound Device Driver</FONT></A>
+				<LI><A HREF="#Example%206.%20Experiment%20Task"><FONT SIZE="2">Experiment Task</FONT></A>
+				<LI><A HREF="#Example%207.%20Kernel%20Task"><FONT SIZE="2">Kernel Task</FONT></A>
+				<LI><A HREF="#Example%208.%20Protected%20Mode%20Equate"><FONT SIZE="2">Protected Mode Equates</FONT></A>
+				<LI><A HREF="#Example%209.%20Protected%20Mode%20Macros"><FONT SIZE="2">Protected Mode Macros</FONT></A>
+				<LI><A HREF="#Example%2010.%20Startup%20and%20Shutdown"><FONT SIZE="2">Startup and Shutdown</FONT></A>
+			</OL>
+			<P>Since its introduction in 1985, the Intel386&copy; processor and later processors (the Intel486&copy; processor
+			and the Intel Pentium&copy; processor) have operated in one of two modes: real-address mode and protected virtual-address
+			mode. The real-address mode provides compatibility with earlier processors. Protected mode promotes increased performance
+			and reliability in most software applications that are designed to use that mode. To help you capture the power
+			of 32-bit protected mode in your own programming, this application note illustrates a number of protected-mode
+			programming techniques via an example application that you can duplicate on your 32-bit, AT-compatible PC using
+			MS-DOS* and the Microsoft* assembler MASM.</P>
+			<P>You will find this application note useful if you:</P>
+			<UL>
+				<LI>Are a programmer of custom operating systems or real-time executives.
+				<LI>Need to modify or enhance existing protected-mode operating systems, such as UNIX*, Windows NT*, or OS/2*.
+				<LI>Need to develop DOS memory managers or DOS extenders.
+				<LI>Just want to understand better how the use of protected mode can enhance your software application.
+			</UL>
+			<P>We assume that you have access to the basic facts about protected mode as presented in an Intel Programmer's
+			Reference Manual or User's Manual for your processor or in one of the many third-party reference books (refer to
+			the Bibliography for a list of some possibilities). You will probably want to have one of these books at hand as
+			you read through this application note.</P>
+			<P><A NAME="1.%20Overview"></A><B><FONT SIZE="5">1. </FONT></B><U><B><FONT SIZE="5">Overview</FONT></B></U></P>
+			<P>It is almost as easy to program applications for protected mode as to program them for real mode - even easier
+			in some cases - however, systems level programming for protected mode can seem a little off-putting until you get
+			some experience and actually feel the new power at your disposal. So, this note presents a simple application that
+			allows you to take the processor for a test drive at full speed. In a short trip such as this, it is not possible
+			to explore all the features of protected mode nor try out all the tools and environments that aid protected-mode
+			programming. We will concentrate on protection, segmentation, and multitasking. Along the way, however, we will
+			point out some other territories that you will want to return to later and explore on your own.</P>
+			<P><A NAME="1.1.%2032-Bit%20Protected%20Mode"></A><B><FONT SIZE="5">1.1. </FONT></B><U><B><FONT SIZE="5">32-Bit
+			Protected Mode</FONT></B></U></P>
+			<P>The first thing to note about protected mode is that it is the &quot;native mode&quot; of the processor. The
+			processor starts executing in real-address mode (called just &quot;real mode&quot; by most people) because that
+			mode is capable of executing unchanged all software designed for the 16-bit 8088 processor that was used in the
+			original PC models. But most of the architectural enhancements made to processor generations since the 8088 are
+			available only in protected mode. Following is a list of the most important of these enhancements:</P>
+			<UL>
+				<LI>32-bit architecture. The 32-bit registers and internal data paths double the speed at which data can be moved
+				internally.
+				<LI>Extended addressing. Programs can address up to four gigabytes of physical memory.
+				<LI>Flexible processor-enforced protection. Two types of memory partitioning (segmentation and paging) create independent
+				protected address spaces that promote protection and reliability. The two types of partitioning are both under
+				control of the operating system, allowing it to select from a wide range of protection models.
+				<LI>Virtual memory. Programs can transparently address more memory than physically available on a given machine.
+			</UL>
+			<P>The 32-bit architecture provides the programming resources required to directly support &quot;large&quot; applications
+			- those characterized by large integers, large data structures, large programs (or large numbers of programs),
+			and so on.</P>
+			<P><A NAME="1.2.%20Protected-Mode%20Environments"></A><B><FONT SIZE="5">1.2. </FONT></B><U><B><FONT SIZE="5">Protected-Mode
+			Environments</FONT></B></U></P>
+			<P>Applications programmers can use 32-bit protected mode easily if they are developing in a protected-mode environment.
+			Following are the most widely known, commercially available protected-mode operating environments:</P>
+			<UL>
+				<LI>DOS extenders
+				<LI>Microsoft Windows* 3.x
+				<LI>UNIX SVR4, OS/2 2.x, and Windows NT
+			</UL>
+			<P>The following sections expand on each of these environments.</P>
+			<P><A NAME="1.2.1.%20DOS%20and%20DOS%20Extenders"></A><B><FONT SIZE="5">1.2.1. </FONT></B><U><B><FONT SIZE="5">DOS
+			and DOS Extenders</FONT></B></U></P>
+			<P>DOS does not and cannot execute in 32-bit, protected mode. However, DOS extenders can act as a mini-operating-system,
+			and execute application programs in 32-bit protected mode. DOS extenders provide operating system services to programs
+			in one of three ways:
+			<UL>
+				<LI>By trapping DOS/BIOS calls, translating them, and delivering them to DOS/BIOS in either real mode or virtual
+				8086 mode.
+				<LI>By trapping DOS/BIOS calls and emulating them in the extender.
+				<LI>By providing extended (non-DOS) services via an extended API in the extender itself.
+			</UL>
+			<P>While there are many similarities among the various DOS extender products, there are also many differences.
+			If you choose to use a DOS extender, you should arrange to use compilers, linkers, and debuggers that are compatible
+			with the extender and with each other.</P>
+			<P><A NAME="1.2.2.%20Windows%20and%20Win32s"></A><B><FONT SIZE="5">1.2.2. </FONT></B><U><B><FONT SIZE="5">Windows
+			and Win32s</FONT></B></U></P>
+			<P>Microsoft Windows 3.1 is not, strictly speaking, a 32-bit environment. When executing in its enhanced mode,
+			Windows is a 16-bit DOS extender with an extensive API that isolates programs from DOS and from the AT hardware,
+			and provides a uniform graphical user interface. It also provides non preemptive multitasking services.</P>
+			<P>Windows is important to 32-bit programming, however, because it weans applications from their dependency on
+			the DOS API and the AT platform. Windows provides two migration paths for 16-bit applications to future 32-bit
+			environments:</P>
+			<OL>
+				<LI>The Windows 16-bit API is supported by 32-bit operating systems Windows NT and OS/2 2.1. In both cases, 16-bit
+				API calls are converted to 32-bit API calls by interface procedures called &quot;thunks,&quot; so it is likely
+				that 16-bit applications will execute less efficiently in the 32-bit environment than they did in their original
+				16-bit environment.
+				<LI>The Win32 API, the &quot;native&quot; API of Windows NT, is supported on Windows 3.1 in the form of the Win32s
+				SDK.
+			</OL>
+			<P>The following excerpts about Win32s are taken from &quot;An Overview of Win32s&quot; in file W32SWH.TXT of the
+			MSWIN32 forum on Compuserve:</P>
+			<UL>
+				<P>Win32s is an extension of Windows version 3.1 that allows applications using a subset of the Win32 Application
+				Programming Interface (API) to run unmodified on both Windows version 3.1 and Windows NT. The Win32s subset consists
+				of Win32 equivalents of Win16 functions (Win16 is the 16-bit API offered in Windows version 3.1) as well as flat
+				memory management and structured exception-handling features. Win32s programs will take full advantage of the 32-bit
+				capabilities of the Intel 80x86 microprocessors. Using the Win32s API, developers can compile and run 32-bit code
+				today that will be supported across Microsoft's 32-bit platforms tomorrow.</P>
+			</UL>
+			<P>Regarding performance, the same source says:</P>
+			<UL>
+				<P>Win32s is a perfect candidate for applications that are memory-intensive or calculation-intensive, such as CAD
+				packages, paint packages, image manipulation tools, spreadsheet programs, and simulation software. Manipulating
+				data in 32-bit mode improves the performance of these applications significantly. Win32s applications will also
+				see performance improvements in Windows version 3.1, despite the slight overhead caused by 32-bit to 16-bit translation
+				(thunking) that occurs during API calls. On Windows NT, Win32s applications will call Win32 functions directly;
+				for this reason, a Win32s application will run faster than its Win16 counterpart on both Windows version 3.1 and
+				on Windows NT.</P>
+			</UL>
+			<P>Refer to this and other files in the MSWIN32 forum for more information on Win32s.</P>
+			<P><A NAME="1.2.3.%20UNIX,%20OS/2%202.x,%20and%20Windo"></A><B><FONT SIZE="5">1.2.3. </FONT></B><U><B><FONT SIZE="5">UNIX,
+			OS/2 2.x, and Windows NT</FONT></B></U></P>
+			<P>UNIX is not just one operating system. There are many 32-bit versions of UNIX: UnixWare*, SCO* Open Desktop*,
+			Dell UNIX, Interactive, NeXTStep*, and Solaris*, to name a few. All these versions of UNIX, as well as OS/2 version
+			2.x and Windows NT, release the full power of 32-bit protected mode. The 32-bit protected mode is their normal
+			mode of operation. All provide full 32-bit memory management, preemptive multitasking, and virtual memory. All
+			utilize a page-based, two-layered protection model with a separate linear address space for each task, and support
+			the &quot;flat&quot; memory model for application programs.</P>
+			<P>Multiprocessor capability is another attraction of these operating systems. Many of them (Windows NT, OS/2 2.1,
+			and several of the UNIX variants) are ready for symmetric multiprocessing (SMP) platforms. Each SMP operating system
+			is designed so that it can be executed by any of the processors in a multiprocessor system. An SMP operating system
+			offers multithreading features, so that both operating-system and application processes can be executed by more
+			than one processor simultaneously. Thus, multithreaded software is as scalable as the hardware platform; increasing
+			system performance becomes a matter of adding processors.</P>
+			<P>While the advantages of converting applications to 32-bit protected mode are many, these operating systems have
+			not neglected 16-bit applications. In addition to their native, 32-bit execution environments, OS/2, Windows NT,
+			and most of the UNIX variants have execution environments that support 16-bit DOS applications. Typically, this
+			consists of executing DOS and its application program as a virtual 8086 mode task. Further, OS/2, Windows NT, and
+			some of the UNIX variants have execution environments that support Windows 3.x applications. Here the variety of
+			implementations is greater:</P>
+			<UL>
+				<LI>Windows NT executes each Windows 3.1 application as a thread within a single Windows compatibility process.
+				<LI>OS/2 can either execute each Windows 3.1 application as a separate OS/2 task or execute all Windows 3.1 applications
+				as a single OS/2 task.
+				<LI>Some of the UNIX variants execute Windows 3.1 only in its standard mode treating it as any other DOS application.
+			</UL>
+			<P>For a more extensive overview of these operating systems, refer to the group of operating-system articles in
+			<I>PC Magazine</I>, June 15, 1993.</P>
+			<P><A NAME="1.3.%20Development%20Tools%20for%20Prote"></A><B><FONT SIZE="5">1.3. </FONT></B><U><B><FONT SIZE="5">Development
+			Tools for Protected Mode</FONT></B></U></P>
+			<P>The tools formerly used for programming 16-bit processors and the 16-bit compatibility mode of the newer processors
+			are not, in general, adequate for 32-bit, protected-mode programming. Following is a list of tools categories,
+			each with a brief explanation of the new features needed to support 32-bit, protected-mode programming.</P>
+			<P>Object Format Needs to accommodate 32-bit addresses, and new protected-mode data structures.</P>
+			<P>Operating System Needs to manage 32-bit address space, new protected-mode data structures, new exceptions, and
+			load new object formats.</P>
+			<P>Compiler Needs to generate new addressing modes and instructions, calls to new operating systems, and new object
+			formats.</P>
+			<P>Linker Needs to deal with 32-bit addresses, and new object formats.</P>
+			<P>Debugger Needs to handle processors' new debugging features, exceptions, disassembly of new instructions, viewing
+			of new data structures, and observe protection rules.</P>
+			<P>This example uses the minimum possible set of tools, so that you can run the example on your own PC without
+			having to invest in additional tools. For real applications, however, you will probably need a more extensive toolbox.
+			<A HREF="#Table%201.%20Tools%20Alternatives">Table&nbsp;1</A> lists the tools used by the example, along with the
+			corresponding tools available for more sophisticated applications.</P>
+			<P ALIGN="CENTER"><A NAME="Table%201.%20Tools%20Alternatives"></A><B>Table 1. Tools Alternatives</B></P>
+			<DIV ALIGN="CENTER">
+				<P>
+				<TABLE BORDER="1" CELLPADDING="7" CELLSPACING="1" WIDTH="577">
+					<TR>
+						<TD WIDTH="24%" VALIGN="TOP">
+							<P>
+							<P ALIGN="CENTER">Tool
+						</TD>
+						<TD WIDTH="25%" VALIGN="TOP">
+							<P>
+							<P ALIGN="CENTER">Used by Example
+						</TD>
+						<TD WIDTH="51%" VALIGN="TOP">
+							<P>
+							<P ALIGN="CENTER">Alternatives
+						</TD>
+					</TR>
+					<TR>
+						<TD WIDTH="24%" VALIGN="TOP">Assembler/Compiler</TD>
+						<TD WIDTH="25%" VALIGN="TOP">Microsoft MASM</TD>
+						<TD WIDTH="51%" VALIGN="TOP">A variety of 32-bit compilers for languages such as C, Pascal, FORTRAN, COBOL, Lisp, etc. are available from the
+							vendors listed in the file TVEND1.TXT1.</TD>
+					</TR>
+					<TR>
+						<TD WIDTH="24%" VALIGN="TOP">Linker</TD>
+						<TD WIDTH="25%" VALIGN="TOP">MASM Linker; some self-binding within the example program.</TD>
+						<TD WIDTH="51%" VALIGN="TOP">32-bit linkers are usually provided by vendors of compilers or operating systems.</TD>
+					</TR>
+					<TR>
+						<TD WIDTH="24%" VALIGN="TOP">Loader</TD>
+						<TD WIDTH="25%" VALIGN="TOP">COMMAND.COM, the DOS loader, loads the program in real mode</TD>
+						<TD WIDTH="51%" VALIGN="TOP">Loaders for 32-bit object files are customarily built into 32-bit operating systems. DOS extenders are often loaded
+							by DOS, after which the extender uses its internal loader to load the protected-mode program.</TD>
+					</TR>
+					<TR>
+						<TD WIDTH="24%" VALIGN="TOP">Operating system</TD>
+						<TD WIDTH="25%" VALIGN="TOP">Uses no run-time operating-system services.</TD>
+						<TD WIDTH="51%" VALIGN="TOP">UNIX, OS/2, Windows NT, DOS Extenders</TD>
+					</TR>
+					<TR>
+						<TD WIDTH="24%" VALIGN="TOP">Debugger</TD>
+						<TD WIDTH="25%" VALIGN="TOP">Royer Associates' debugger was used for the development of this example.</TD>
+						<TD WIDTH="51%" VALIGN="TOP">Refer to the file TVEND1.TXT1 for a list of debuggers or debugging environments for protected mode.</TD>
+					</TR>
+				</TABLE>
+</P>
+			</DIV>
+			<P><B><FONT SIZE="2">NOTE 1.</FONT></B><FONT SIZE="2"> The file TVEND1.TXT contains a list of tool vendors. This
+			file is located in the libraries of the Intel ACCESS forum (GO INTELACCESS) on Compuserve.</FONT></P>
+			<P><A NAME="1.4.%20Tools%20Standardization"></A><B><FONT SIZE="5">1.4. </FONT></B><U><B><FONT SIZE="5">Tools Standardization</FONT></B></U></P>
+			<P>With the growing number of 32-bit operating environments—32-bit extended DOS, Windows, UNIX, and OS/2—comes
+			the potential for proliferation of object file formats and fragmentation of the development tools that use these
+			formats, namely compilers, loaders, and debuggers. To control such proliferation and fragmentation, a number of
+			leading industry vendors have joined together to form the Tool Interface Standards (TIS) committee. The charter
+			of the TIS committee is &quot;to standardize sets of technical specifications for interfaces visible to development
+			tools and compilers.&quot; Tool standardization offers the following benefits to software developers:</P>
+			<UL>
+				<LI>Improved productivity by standardization of the development environment.
+				<LI>&quot;Mix and match&quot; tools leading to more choices and improved productivity. The developer can mix a
+				favorite linker with a favorite debugger without regard to where those tools come from.
+				<LI>Improved &quot;time to market&quot; for multiplatform products.
+				<LI>Efficient development. Because there is less need to focus on porting, more R&amp;D dollars can be used to
+				add value.
+			</UL>
+			<P>The TIS standards developed so far are available from Intel Literature Distribution (refer to the bibliography)
+			and from the Intel ACCESS forum on Compuserve (GO INTELACCESS).</P>
+			<P><A NAME="2.%20The%20Example%20Application"></A><B><FONT SIZE="5">2. </FONT></B><U><B><FONT SIZE="5">The Example
+			Application</FONT></B></U></P>
+			<P>To illustrate protected-mode programming, we have selected a simple psychoacoustical application. The application
+			is the implementation of an experiment to answer the question &quot;Do changes in the duty cycle of a sound wave
+			produce any acoustical effect that can be perceived by the human ear?&quot; Duty cycle refers to the proportion
+			of time spent at positive air pressure compared to the total length of a sound wave, as <A HREF="#Figure%201.%20Duty%20Cycle%20of%20Sound">Figure&nbsp;1</A>
+			shows.</P>
+			<P>
+			<P ALIGN="CENTER"><IMG SRC="sound.gif" WIDTH="411" HEIGHT="204" ALIGN="BOTTOM" BORDER="0"></P>
+			<P ALIGN="CENTER"><A NAME="Figure%201.%20Duty%20Cycle%20of%20Sound"></A><FONT SIZE="2">&nbsp;</FONT><B>Figure 1.
+			Duty Cycle of Sound Waves</B></P>
+			<P>To carry out the experiment, we will implement a protected-mode, real-time software system that runs on an AT-compatible
+			system with an Intel386, Intel486, or Pentium processor. This software system has three general parts:</P>
+			<P><B>1. Kernel. </B><BR>
+			The kernel provides low-level, operating-system-like services. It comprises:</P>
+			<UL>
+				<LI>Start-up and shut-down procedures.
+				<LI>A timer manager that uses the programmable interval timer to maintain a software clock.
+				<LI>A scheduler that uses the software clock to dispatch tasks at requested intervals.
+				<LI>Exception handlers.
+			</UL>
+			<P><B>2. Device driver.</B> <BR>
+			The example has one device driver that moves the diaphragm of the speaker of the AT-compatible system in and out
+			repetitively at variable frequencies with variable duty cycle. The frequency and duty cycle are system parameters
+			that can be changed by application tasks. The device driver calls on the scheduler to help the device driver make
+			changes to the state of the speaker at appropriate time intervals.</P>
+			<P><B>3. Application task.</B><BR>
+			The application program varies the sound parameters to create various frequencies and various duty cycles at each
+			frequency. The application also calls on the scheduler to help the application make changes to the sound parameters
+			at specific time intervals.</P>
+			<P>We will run the experiment and listen to the sounds that the speaker creates.</P>
+			<P>The example has some of the features of a DOS extender, and therefore can execute in a DOS environment without
+			the aid of any other software. But it is not a complete DOS extender. It does execute on an AT equipped with DOS.
+			We use DOS to load the experiment, but otherwise we do not use any of the features of DOS. A real DOS extender,
+			on the other hand, would help the 32-bit application access many of the services provided by 16-bit DOS. Another
+			major function of a DOS extender is to allow programs to access extended memory (memory above one megabyte). The
+			example, by placing the processor in protected mode, does enable its applications to access extended memory; however,
+			the application programs do not take advantage of that ability, and the kernel provides no memory space management
+			functions. The subject of extended addressing in protected mode has been well covered by other documentation (refer
+			to the bibliography); the purpose of the example is to illustrate other features of protected mode: protection
+			and task switching.</P>
+			<P>Example&nbsp;1 shows the macros used throughout the example code to implement intersegment jumps. These macros
+			provide the correct override prefixes for jumping between the various combinations of 16-bit and 32-bit segments.</P>
+			<P ALIGN="CENTER"><A NAME="Example%201.%20Jump%20Macros"></A><B>Example 1. Jump Macros</B></P>
+			<UL>
+				<P><FONT SIZE="2" COLOR="#990000">;The following macro is used to execute a far call when in protected<BR>
+				;mode. You must supply the desired offset and selector. It also<BR>
+				;assumes 32-bit mode because we want the DD to give a 32-bit offset.<BR>
+				;If using this in 16-bit mode, you must change the DD to DW.<BR>
+				;This can be used for task switches or calling gates.<BR>
+				</FONT><FONT SIZE="2" COLOR="blue">PCALLF32_32 MACRO SEL1,OFF1<BR>
+				DB 9AH<BR>
+				DD OFF1<BR>
+				DW SEL1<BR>
+				ENDM<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;This macro is for making a far call from a 32-bit segment to a<BR>
+				;16-bit segment. The 66H tells the CPU to use a 16-bit operand<BR>
+				;instead of a 32-bit. Assumes OFF1 is defined in a USE16 segment.<BR>
+				</FONT><FONT SIZE="2" COLOR="blue">PCALLF32_16 MACRO SEL1,OFF1<BR>
+				DB 66H<BR>
+				DB 09AH<BR>
+				DW OFF1<BR>
+				DW SEL1<BR>
+				ENDM<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;This macro is for making a far jump from a 32-bit segment to a<BR>
+				;16-bit segment. The 66H tells the CPU to use a 16-bit operand<BR>
+				;instead of a 32-bit. Assumes OFF1 is defined in a USE16 segment.<BR>
+				</FONT><FONT SIZE="2" COLOR="blue">PJMPF32_16 MACRO SEL1,OFF1<BR>
+				DB 66H<BR>
+				DB 0EAH<BR>
+				DW OFF1<BR>
+				DW SEL1<BR>
+				ENDM<BR>
+				;This macro is for making a far jump from a 16-bit segment to a<BR>
+				;32-bit segment. The 66H tells the CPU to use a 32-bit operand<BR>
+				;instead of a 16-bit. Assumes OFF1 is defined in a USE32 segment.<BR>
+				PJMPF16_32 MACRO SEL1,OFF1<BR>
+				DB 66H<BR>
+				DB 0EAH<BR>
+				DD OFFSET OFF1<BR>
+				DW SEL1<BR>
+				ENDM<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;This macro is for making a far jump from a 32-bit segment to a<BR>
+				;32-bit segment. This can be used for task switches. Assumes OFF1 is<BR>
+				;defined in a 32-bit segment.<BR>
+				</FONT><FONT SIZE="2" COLOR="blue">PJMPF32_32 MACRO SEL1,OFF1<BR>
+				DB 0EAH<BR>
+				DD OFF1<BR>
+				DW SEL1<BR>
+				ENDM<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;This macro is for making a far jump from a 16-bit segment to a<BR>
+				;16-bit segment. This can be used for task switches. Assumes OFF1 is<BR>
+				;defined in a 16-bit segment.<BR>
+				</FONT><FONT SIZE="2" COLOR="blue">PJMPF16_16 MACRO SEL1,OFF1<BR>
+				DB 0EAH<BR>
+				DW OFF1<BR>
+				DW SEL1<BR>
+				ENDM<BR>
+				&nbsp;</FONT></P>
+				<P ALIGN="CENTER"><FONT SIZE="2" COLOR="blue">&nbsp;</FONT></P>
+			</UL>
+			<P>The following sections explain each module in detail and discuss its protection needs. After all the modules
+			have been presented, we will show how the descriptors of the segments of those modules are placed in descriptor
+			tables. The order of presentation is from low-level modules to high-level modules.</P>
+
+			<P><A NAME="3.%20Timer%20Module"></A><B><FONT SIZE="5">3. </FONT><U><FONT SIZE="5">Timer Module</FONT></U></B></P>
+
+			<P>The example application controls the movement of the cone of the AT's speaker in real time at audible frequencies;
+			therefore, the application needs a very high-resolution clock. The clock is based upon interrupts from one of the
+			timers in the AT's programmable interval timer. These interrupts illustrate the use of an interrupt procedure.</P>
+
+			<P><A NAME="3.1.%20Applying%20Protection"></A><B><FONT SIZE="5">3.1. </FONT></B><U><B><FONT SIZE="5">Applying Protection
+			to Interrupt Procedures</FONT></B></U></P>
+			<P>Interrupt handlers can be implemented either as tasks or procedures. The interrupt task provides greater protection,
+			while the interrupt procedure provides greater efficiency. In this case, we have chosen to make the timer interrupt
+			handler a procedure because the application demands a very high-frequency clock tick. An interrupt procedure must
+			execute at privilege level zero (PL0), because use of any other privilege level results in an illegal outward call
+			when the timer interrupt occurs while the processor is already executing a PL0 procedure. The timer procedure's
+			descriptors must be in the GDT, so that the timer interrupt can occur while any task is executing. The timer procedure's
+			data is likewise stored in a global, PL0, data segment.</P>
+			<P><A NAME="3.2.%20Example%20Code"></A><B><FONT SIZE="5">3.2. </FONT><U><FONT SIZE="5">Example Code</FONT></U></B></P>
+			<P>The timer module contains several timer-related subroutines and the timer interrupt service routine. All are
+			located in the kernel code segment.</P>
+			<UL>
+				<LI>A compile-time variable <B>TIMER_FREQUENCY</B> that specifies the timer tick interval so that it can be easily
+				changed. This variable is available to other kernel procedures so that they can convert <B>TIMER_COUNT</B> into
+				seconds.
+				<LI>A 32-bit real-time clock variable <B>TIMER_COUNT</B> that holds a count of clock ticks since program start-up.
+				<LI>A timer interrupt procedure TIMER_ISR. This procedure is very short, so that timer interrupts do not consume
+				processor cycles excessively. It increments <B>TIMER_COUNT</B> and checks for overflow. Overflow of <B>TIMER_COUNT</B>
+				causes the example to terminate. <B>TIMER_COUNT</B> is never reset.
+				<LI>An initialization procedure <B>TIMER_INIT</B>. This sets the programmable interval timer to interrupt at <B>TIMER_FREQUENCY</B>.
+				<LI>A shutdown procedure <B>TIMER_RESTORE</B> that restores the programmable interval timer to its original state,
+				the state required for returning control to <B>DOS</B>.
+				<LI>A subroutine <B>ENABLE_LEVEL_0</B> that enables the timer interrupt by programming the <B>PIC</B>.
+			</UL>
+			<P ALIGN="CENTER"><A NAME="Example%202.%20Timer%20Module"></A><B>Example 2. Timer Module</B></P>
+			<UL>
+				<P><FONT SIZE="2" COLOR="#990000">;**************** TIMER module ;It uses two segments: kernel code and kernel
+				stack.</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				KERNEL_STACK32 SEGMENT<BR>
+				KERNEL_STACK32_BEGIN LABEL WORD<BR>
+				DD 400H DUP(0)<BR>
+				KERNEL_STACK32_END LABEL WORD<BR>
+				KERNEL_STACK32 ENDS<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;The _BEGIN and _END labels are used later to calculate<BR>
+				; the segment limit for the segment descriptor.<BR>
+				</FONT><FONT SIZE="2" COLOR="blue">KERNEL_CODE32 SEGMENT USE32 PUBLIC<BR>
+				ASSUME CS:KERNEL_CODE32,DS:KWAIT_DATA32,SS:KERNEL_STACK32<BR>
+				KERNEL_CODE32_BEGIN:<BR>
+				TIMER_FREQUENCY EQU 20000 </FONT><FONT SIZE="2" COLOR="#990000">;units, cycles/sec</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				TIMER_VALUE EQU 1193182/TIMER_FREQUENCY<BR>
+				TIMER_INIT PROC<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;This proc reprograms the CT0 on the 8254 Programmable Interval<BR>
+				;Timer, to count with the value, TIMER_VALUE. On the AT platform,<BR>
+				;the input clock of the 8254 is 1.193182 MHz, so a value of 119<BR>
+				;in TIMER_VALUE gives an output frequency of about 10 KHz.<BR>
+				;In general, frequency = 1.193182*10^6/TIMER_VALUE<BR>
+				</FONT><FONT SIZE="2" COLOR="blue">MOV AL,36H </FONT><FONT SIZE="2" COLOR="#990000">;Command: select timer 0</FONT><FONT
+				SIZE="2" COLOR="blue"><BR>
+				OUT 43H,AL </FONT><FONT SIZE="2" COLOR="#990000">;Write control word</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV AX,TIMER_VALUE </FONT><FONT SIZE="2" COLOR="#990000">;Clock divisor</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OUT 40H,AL </FONT><FONT SIZE="2" COLOR="#990000">;Low byte of counter 0</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV AL,AH<BR>
+				OUT 40H,AL </FONT><FONT SIZE="2" COLOR="#990000">;High byte of counter 0</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RET<BR>
+				TIMER_INIT ENDP<BR>
+				TIMER_RESTORE PROC<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;This sets the timer back to the original frequency.</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				CLI </FONT><FONT SIZE="2" COLOR="#990000">;Disable interrupts</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV AL,36H </FONT><FONT SIZE="2" COLOR="#990000">;Command: select counter 0</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OUT 43H,AL </FONT><FONT SIZE="2" COLOR="#990000">;Write control word</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV AX,0FFFFH </FONT><FONT SIZE="2" COLOR="#990000">;Clock divisor used by DOS</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OUT 40H,AL </FONT><FONT SIZE="2" COLOR="#990000">;Low byte of counter 0</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV AL,AH<BR>
+				OUT 40H,AL </FONT><FONT SIZE="2" COLOR="#990000">;High byte of counter 0</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RET<BR>
+				TIMER_RESTORE ENDP<BR>
+				ENABLE_LEVEL_0 PROC<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Enable the timer interrupt, level 0 on the master 8259.</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				IN AL,PICA01 </FONT><FONT SIZE="2" COLOR="#990000">;Get inerrupt mask</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				AND AL,0FEH </FONT><FONT SIZE="2" COLOR="#990000">;Clear bit 0</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OUT PICA01,AL </FONT><FONT SIZE="2" COLOR="#990000">;Reprogram mask</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RET<BR>
+				ENABLE_LEVEL_0 ENDP<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;The timer interrupt routine simply increments TIMER_COUNT,<BR>
+				; setting the OVERFLOW_FLAG if necessary.<BR>
+				</FONT><FONT SIZE="2" COLOR="blue">TIMER_ISR: </FONT><FONT SIZE="2" COLOR="#990000">;Interrupts are disabled upon
+				entry</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				PUSH EAX </FONT><FONT SIZE="2" COLOR="#990000">;Save registers</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				PUSH DS<BR>
+				MOV AX,KWAIT_DATA32_SEL </FONT><FONT SIZE="2" COLOR="#990000">;Load segment descriptor</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV DS,AX </FONT><FONT SIZE="2" COLOR="#990000">; of TIMER_COUNT</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				ADD TIMER_COUNT,1 </FONT><FONT SIZE="2" COLOR="#990000">;ADD is necessary because</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				JNC TIMER_ISR_EXIT </FONT><FONT SIZE="2" COLOR="#990000">; INC does not set overflow.</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				INC OVERFLOW_FLAG </FONT><FONT SIZE="2" COLOR="#990000">;Record overflow condition</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				TIMER_ISR_EXIT:<BR>
+				MOV AL,EOI </FONT><FONT SIZE="2" COLOR="#990000">;PIC End-Of-Interrupt command</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OUT PICA00,AL </FONT><FONT SIZE="2" COLOR="#990000">;Send EOI to PIC</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				POP DS </FONT><FONT SIZE="2" COLOR="#990000">;Restore registers</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				POP EAX<BR>
+				IRETD </FONT><FONT SIZE="2" COLOR="#990000">;Return, restoring interrupt flag</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				KERNEL_CODE32 ENDS<BR>
+				&nbsp;</FONT></P>
+			</UL>
+			<P><A NAME="4.%20Scheduler%20Module"></A><B><FONT SIZE="5">4. </FONT><U><FONT SIZE="5">Scheduler Module</FONT></U></B></P>
+			<P>A task (also called a process in UNIX and some other operating systems) is an instance of a program loaded into
+			memory, together with its current state, which includes a pointer to the current instruction in the program. In
+			the Intel 32-bit architecture, a task is represented by a task state segment (TSS), a processor-recognized memory
+			structure that stores the state of the task when it is not being executed. The processor switches from the task
+			that it is currently executing to a new task by loading the processor state from the TSS of the new task and beginning
+			to execute the instructions of that task at the point indicated by the new instruction pointer. An operating system
+			triggers a task switch by jumping or calling to the TSS of the new task or to a task gate for that TSS.</P>
+			<P>This scheduler is designed to cause events to happen at specified time intervals. The timer module gives the
+			scheduler its sense of time; the scheduler has access to the real-time clock variable TIMER_COUNT. Events are implemented
+			as tasks.</P>
+			<P>The mechanism for scheduling tasks for execution is round-robin and nonpreemptive; that is, each task in turn
+			is given an opportunity to run and each task runs until it gives up the processor. Such a mechanism works as long
+			as each task always gives up the processor voluntarily and uses little time before doing so.</P>
+			<P><A NAME="4.1.%20Applying%20Protection"></A><B><FONT SIZE="5">4.1. </FONT><U><FONT SIZE="5">Applying Protection
+			to the Scheduler</FONT></U></B></P>
+			<P>The scheduler is an example of a critical OS kernel procedure that needs maximum protection; therefore, the
+			scheduler is stored in a global, PL0 segment. The scheduler must be callable from any privilege level, so it has
+			PL3 call gates, which ensure that other programs enter the procedure only at its intended entry points. The scheduler's
+			data structures are stored in a global, PL0 segment so that they are accessible only by trusted PL0 procedures.</P>
+			<P><A NAME="4.2.%20Example%20Code"></A><B><FONT SIZE="5">4.2. </FONT><U><FONT SIZE="5">Example Code</FONT></U></B></P>
+			<P>The scheduler consists of :-</P>
+			<UL>
+				<LI>A circular linked list of all tasks. The entry for each task has the following fields:
+				<OL>
+					<LI>A 32-bit <B>WAKE_UP_TIME</B> with the same units as the real-time clock. <B>WAKE_UP_TIME</B> is initially set
+					to zero.
+					<LI>A pointer to the task's <B>TSS</B>.
+					<LI>A link to the next entry in the list.
+				</OL>
+				<LI>A pointer to the current task in the list.
+				<LI>Two wait procedures <B>WAIT_TICKS(INTERVAL)</B> and <B>WAIT_MSECS(INTERVAL)</B>. These are actually two entry
+				points to the same procedure, and each has a call gate. The two are identical, except for the units of <B>INTERVAL</B>
+				— either timer ticks, or milliseconds which are converted to timer tick units. The common procedure sets the task's
+				<B>WAKE_UP_TIME</B> to <B>TIMER_COUNT</B> + <B>INTERVAL</B>. Then it steps through the list of tasks, starting
+				with the next task in turn, looking for the next ready task by comparing each task's <B>WAKE_UP_TIME</B> to <B>TIMER_COUNT</B>.
+				A task is ready if its <B>WAKE_UP_TIME</B> is less than or equal to <B>TIMER_COUNT</B>. A task is not ready if
+				its <B>WAKE_UP_TIME</B> is greater than <B>TIMER_COUNT</B>. If no tasks are ready, the scheduler loops indefinitely
+				through the task list. Sooner or later some task's waiting period will expire as <B>TIMER_COUNT</B> advances. When
+				<B>WAIT</B> finds a ready task, it checks whether it is the current task. If so, <B>WAIT</B> just returns. If it
+				is another task, <B>WAIT</B> jumps to the <B>TSS</B> of that task, causing the processor to perform a task switch.
+			</UL>
+			<P ALIGN="CENTER"><A NAME="Example%203.%20Scheduler"></A><B>Example 3. Scheduler</B></P>
+			<BLOCKQUOTE>
+				<P><FONT SIZE="2" COLOR="#990000">;***************** WAIT (SCHEDULER) module<BR>
+				;The data segment contains the linked list of tasks<BR>
+				;and several other variables.<BR>
+				;The code segment contains the wait function<BR>
+				</FONT><FONT SIZE="2" COLOR="blue">KWAIT_DATA32 SEGMENT USE32 PUBLIC<BR>
+				KWAIT_DATA32_BEGIN:<BR>
+				TASK_LINK STRUC<BR>
+				WAKE_UP_TIME DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;Wakeup value</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				THIS_TASK_OFFSET DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;Dummy offset placeholder</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				THIS_TASK_SEL DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;Selector to this task</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				NEXT_TASK_LINK DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;Pointer to next task link</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				TASK_LINK ENDS<BR>
+				CURRENT_TASK_LINK DD KERNEL_TASK_LINK<BR>
+				OLD_TASK_LINK DD 0<BR>
+				TASK_LIST LABEL FWORD </FONT><FONT SIZE="2" COLOR="#990000">;List of scheduled tasks</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				APP_TASK_LINK TASK_LINK &lt;0,0,APP_TSS_SEL,SOUND_TASK_LINK&gt;<BR>
+				SOUND_TASK_LINK TASK_LINK &lt;0,0,SOUND_TSS_SEL,KERNEL_TASK_LINK&gt;<BR>
+				KERNEL_TASK_LINK TASK_LINK &lt;0,0,KERNEL_TSS_SEL,APP_TASK_LINK&gt;<BR>
+				TIMER_COUNT DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;Count of clock ticks</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OVERFLOW_FLAG DB 0 </FONT><FONT SIZE="2" COLOR="#990000">;Set when TIMER_COUNT overflows</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				KWAIT_DATA32_END:<BR>
+				KWAIT_DATA32 ENDS<BR>
+				KWAIT_CODE32 SEGMENT USE32 PUBLIC<BR>
+				ASSUME CS:KWAIT_CODE32,DS:KWAIT_DATA32<BR>
+				KWAIT_CODE32_BEGIN:<BR>
+				WAIT_TICKS PROC FAR<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;This is called when a task is done for the time being.<BR>
+				;It executes in the context of the calling task.<BR>
+				;EAX = WAIT TIME in clock tick units. If EAX = -1,<BR>
+				;we have reached the end of the SOUND_TABLE<BR>
+				</FONT><FONT SIZE="2" COLOR="blue">PUSH EAX </FONT><FONT SIZE="2" COLOR="#990000">;Save regs</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				PUSH ESI<BR>
+				PUSH EBX<BR>
+				PUSH DS<BR>
+				MOV BX,KWAIT_DATA32_SEL<BR>
+				MOV DS,BX </FONT><FONT SIZE="2" COLOR="#990000">;Load data segment of KERNEL</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV ESI,CURRENT_TASK_LINK </FONT><FONT SIZE="2" COLOR="#990000">;Get current task_link</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV OLD_TASK_LINK,ESI </FONT><FONT SIZE="2" COLOR="#990000">;Save task_link to current context</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				CMP EAX,-1 </FONT><FONT SIZE="2" COLOR="#990000">;Check for end of sound-list</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				JNE WAIT1 </FONT><FONT SIZE="2" COLOR="#990000">;Not reached</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				INC OVERFLOW_FLAG </FONT><FONT SIZE="2" COLOR="#990000">;End of sound list</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				JMP WAIT2<BR>
+				WAIT1:<BR>
+				ADD EAX,TIMER_COUNT </FONT><FONT SIZE="2" COLOR="#990000">;Form wakeup time</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				WAIT2:<BR>
+				MOV [ESI].TASK_LINK.WAKE_UP_TIME,EAX </FONT><FONT SIZE="2" COLOR="#990000">;Save new wakeup time</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				CHECK_NEXT:<BR>
+				CMP OVERFLOW_FLAG,0 </FONT><FONT SIZE="2" COLOR="#990000">;Time to shut down?</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				JE CHECK1 </FONT><FONT SIZE="2" COLOR="#990000">;No</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				PJMPF32_32 KERNEL_TSS_SEL, 0 </FONT><FONT SIZE="2" COLOR="#990000">;Yes, switch to kernel task</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				CHECK1:<BR>
+				MOV EAX,[ESI].TASK_LINK.NEXT_TASK_LINK </FONT><FONT SIZE="2" COLOR="#990000">;Get ptr for next</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				MOV CURRENT_TASK_LINK,EAX </FONT><FONT SIZE="2" COLOR="#990000">;Store ptr</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV ESI,CURRENT_TASK_LINK </FONT><FONT SIZE="2" COLOR="#990000">;Point to next task_link</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV EAX,[ESI].TASK_LINK.WAKE_UP_TIME </FONT><FONT SIZE="2" COLOR="#990000">;Get wake up time</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				CMP TIMER_COUNT,EAX </FONT><FONT SIZE="2" COLOR="#990000">;Time to wake up?</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				JB CHECK_NEXT </FONT><FONT SIZE="2" COLOR="#990000">;No</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				DISPATCH_THIS_ONE:<BR>
+				CMP ESI,OLD_TASK_LINK </FONT><FONT SIZE="2" COLOR="#990000">;Are we in the task already?</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				JE SAME_TASK </FONT><FONT SIZE="2" COLOR="#990000">;Yes, return to caller</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">; Switch to new task by jumping to its TSS</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				JMP FWORD PTR [ESI].TASK_LINK.THIS_TASK_OFFSET<BR>
+				SAME_TASK: </FONT><FONT SIZE="2" COLOR="#990000">;returns here next time this task is dispatched</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				POP DS </FONT><FONT SIZE="2" COLOR="#990000">;pop registers and return</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				POP EBX<BR>
+				POP ESI<BR>
+				POP EAX<BR>
+				RET<BR>
+				WAIT_TICKS ENDP<BR>
+				MIN_PERIOD EQU 1<BR>
+				DEFAULT_PERIOD EQU 1000<BR>
+				WAIT_MSECS PROC FAR </FONT><FONT SIZE="2" COLOR="#990000">; Alternate entry point to WAIT_TICKS.</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;This wait function is called by the application, it uses application<BR>
+				;units of duration, i.e. milliseconds. It converts to clock ticks,<BR>
+				;then jumps to the normal wait. EAX = duration in milliseconds.<BR>
+				</FONT><FONT SIZE="2" COLOR="blue">CMP EAX,-1<BR>
+				JE WAIT_TICKS </FONT><FONT SIZE="2" COLOR="#990000">;If -1, do not convert</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV EBX,1193 </FONT><FONT SIZE="2" COLOR="#990000">;Timer input frequency</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MUL EBX </FONT><FONT SIZE="2" COLOR="#990000">;EAX = EAX * EBX</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV EBX,TIMER_VALUE<BR>
+				DIV EBX </FONT><FONT SIZE="2" COLOR="#990000">;EAX = EAX / EBX</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				CMP EAX,MIN_PERIOD<BR>
+				JA CP2<BR>
+				MOV EAX,DEFAULT_PERIOD </FONT><FONT SIZE="2" COLOR="#990000">;Use default</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				CP2:<BR>
+				JMP WAIT_TICKS<BR>
+				WAIT_MSECS ENDP<BR>
+				KWAIT_CODE32_END:<BR>
+				KWAIT_CODE32 ENDS</FONT>
+			</BLOCKQUOTE>
+			<P>
+			<P ALIGN="CENTER"><A NAME="5.%20Exception%20Handlers"></A><A NAME="Example%204.%20Exception%20Handlers"></A><B>Example
+			4. Exception Handlers</B></P>
+			<BLOCKQUOTE>
+				<P><FONT SIZE="2" COLOR="blue">KERNEL_CODE32 SEGMENT USE32 PUBLIC<BR>
+				ASSUME CS:KERNEL_CODE32,DS:KWAIT_DATA32,SS:KERNEL_STACK32<BR>
+				EXCEPTION_BEEP:<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;INPUT--CX = counter value<BR>
+				; --frequency = 1.19*10^6/(counter value)<BR>
+				; BX = number of beeps<BR>
+				</FONT><FONT SIZE="2" COLOR="blue">MOV AL,0B6H </FONT><FONT SIZE="2" COLOR="#990000">;Command: select counter 2</FONT><FONT
+				SIZE="2" COLOR="blue"><BR>
+				OUT 43H,AL </FONT><FONT SIZE="2" COLOR="#990000">;Write control word</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV AX,CX </FONT><FONT SIZE="2" COLOR="#990000">;Get count</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OUT 42H,AL </FONT><FONT SIZE="2" COLOR="#990000">;Low byte of counter 2</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV AL,AH<BR>
+				OUT 42H,AL </FONT><FONT SIZE="2" COLOR="#990000">;High byte of counter 2</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				EXB1:<BR>
+				MOV AL,3 </FONT><FONT SIZE="2" COLOR="#990000">;Gate sound on</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OUT PORT_B,AL<BR>
+				MOV ECX,500000H<BR>
+				LOOP $ </FONT><FONT SIZE="2" COLOR="#990000">;Delay</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV AL,0 </FONT><FONT SIZE="2" COLOR="#990000">;Gate sound off</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OUT PORT_B,AL<BR>
+				MOV ECX,500000H<BR>
+				LOOP $ </FONT><FONT SIZE="2" COLOR="#990000">;Delay</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				DEC BX<BR>
+				JNZ EXB1 </FONT><FONT SIZE="2" COLOR="#990000">;Do again!</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				PJMPF32_16 RET_CODE16_SEL,RET_REAL </FONT><FONT SIZE="2" COLOR="#990000">;Done</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				<BR>
+				EXCEPTION_HANDLER0:<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;All handlers are similar--they generate a series of beeps<BR>
+				;Frequency increases with exception number<BR>
+				;Number of beeps = exception number plus 1<BR>
+				</FONT><FONT SIZE="2" COLOR="blue">MOV CX,1800H<BR>
+				MOV BX,1<BR>
+				JMP EXCEPTION_BEEP<BR>
+				EXCEPTION_HANDLER1:<BR>
+				MOV CX,1700H<BR>
+				MOV BX,2<BR>
+				JMP EXCEPTION_BEEP<BR>
+				EXCEPTION_HANDLER2:<BR>
+				MOV CX,1600H<BR>
+				MOV BX,3<BR>
+				JMP EXCEPTION_BEEP<BR>
+				EXCEPTION_HANDLER3:<BR>
+				MOV CX,1500H<BR>
+				MOV BX,4<BR>
+				JMP EXCEPTION_BEEP<BR>
+				EXCEPTION_HANDLER4:<BR>
+				MOV CX,1400H<BR>
+				MOV BX,5<BR>
+				JMP EXCEPTION_BEEP<BR>
+				EXCEPTION_HANDLER5:<BR>
+				MOV CX,1300H<BR>
+				MOV BX,6<BR>
+				JMP EXCEPTION_BEEP<BR>
+				EXCEPTION_HANDLER6:<BR>
+				MOV CX,1200H<BR>
+				MOV BX,7<BR>
+				JMP EXCEPTION_BEEP<BR>
+				EXCEPTION_HANDLER7:<BR>
+				MOV CX,1100H<BR>
+				MOV BX,8<BR>
+				JMP EXCEPTION_BEEP<BR>
+				EXCEPTION_HANDLER8:<BR>
+				MOV CX,1000H<BR>
+				MOV BX,9<BR>
+				JMP EXCEPTION_BEEP<BR>
+				EXCEPTION_HANDLER9:<BR>
+				MOV CX,0F00H<BR>
+				MOV BX,10<BR>
+				JMP EXCEPTION_BEEP<BR>
+				EXCEPTION_HANDLER10:<BR>
+				MOV CX,0E00H<BR>
+				MOV BX,11<BR>
+				JMP EXCEPTION_BEEP<BR>
+				EXCEPTION_HANDLER11:<BR>
+				MOV CX,0D00H<BR>
+				MOV BX,12<BR>
+				JMP EXCEPTION_BEEP<BR>
+				EXCEPTION_HANDLER12:<BR>
+				MOV CX,0C00H<BR>
+				MOV BX,13<BR>
+				JMP EXCEPTION_BEEP<BR>
+				EXCEPTION_HANDLER13:<BR>
+				MOV CX,0B00H<BR>
+				MOV BX,14<BR>
+				JMP EXCEPTION_BEEP<BR>
+				EXCEPTION_HANDLER14:<BR>
+				MOV CX,0A00H<BR>
+				MOV BX,15<BR>
+				JMP EXCEPTION_BEEP<BR>
+				EXCEPTION_HANDLER15:<BR>
+				MOV CX,0900H<BR>
+				MOV BX,16<BR>
+				JMP EXCEPTION_BEEP<BR>
+				EXCEPTION_HANDLER16:<BR>
+				MOV CX,0800H<BR>
+				MOV BX,17<BR>
+				JMP EXCEPTION_BEEP<BR>
+				EXCEPTION_HANDLER17:<BR>
+				MOV CX,0700H<BR>
+				MOV BX,18<BR>
+				JMP EXCEPTION_BEEP<BR>
+				KERNEL_CODE32_END:<BR>
+				KERNEL_CODE32 ENDS</FONT></P>
+			</BLOCKQUOTE>
+			<P ALIGN="CENTER">&nbsp;</P>
+			<P><A NAME="6.%20Sound%20Module"></A><B><FONT SIZE="5">6. </FONT></B><U><B><FONT SIZE="5">Sound Module</FONT></B></U></P>
+			<P>The example application generates sound by alternately applying current to and withdrawing current from the
+			voice coil of the PC's speaker. The software controls the voice coil via a port of the PC's programmable peripheral
+			controller.</P>
+			<P><A NAME="6.1.%20Applying%20Protection"></A><B><FONT SIZE="5">6.1. </FONT></B><U><B><FONT SIZE="5">Applying Protection
+			to a Device Driver</FONT></B></U></P>
+			<P>The processor's I/O privilege level (IOPL) defines a level of privilege specifically for the execution of I/O
+			and related instructions. Device drivers are, generally speaking, not implemented as part of the kernel, but rather
+			as users of kernel services. They are considered less trusted than the kernel because they are subject to more
+			frequent change. On the other hand they are critical parts of the system that should not be subject to interference
+			from application programs. Therefore, IOPL is customarily set to a privilege level 1 or 2. In this case the IOPL
+			is initialized to 1 in the flags field of each task's TSS.</P>
+			<P>The code in the device driver task runs at PL1, so that it can execute I/O instructions. Programs executing
+			at privilege levels greater than 1 are not able to execute I/O. The sound specifications are placed in a global,
+			PL1, data segment, so that the device driver code can access them, but application code cannot.</P>
+			<P><A NAME="6.2.%20Example%20Code"></A><B><FONT SIZE="5">6.2. </FONT></B><U><B><FONT SIZE="5">Example Code</FONT></B></U></P>
+			<P>The module that controls the sound consists of the following parts:</P>
+			<UL>
+				<LI>The current sound specifications. The specifications consist of the current <B>ONPERIOD</B> and <B>OFFPERIOD</B>.
+				The full period of a sound cycle is <B>ONPERIOD</B> + <B>OFFPERIOD</B>. <B>ONPERIOD</B> is full period times the
+				duty cycle; <B>OFFPERIOD</B> is full period times the complement of the duty cycle.
+				<LI>A procedure <B>CHANGESOUND</B> that changes the sound specifications. The parameters to <B>CHANGESOUND</B>
+				are in units of milliseconds, which <B>CHANGESOUND</B> converts to timer-ticks. The procedure <B>CHANGESOUND</B>
+				must be callable by application programs; therefore, it has a global, PL3 call gate.
+				<LI>The task <B>SOUND_TASK</B> that drives the speaker. Its logic is an infinite loop through the following steps:
+				<OL>
+					<LI>If <B>ONPERIOD</B> is nonzero, toggle speaker on (apply current to voice coil).
+					<LI>Wait for <B>ONPERIOD</B>.
+					<LI>If <B>OFFPERIOD</B> is nonzero, toggle speaker off (withdraw current from voice coil).
+					<LI>Wait for <B>OFFPERIOD</B>.
+				</OL>
+			</UL>
+			<P>Note that an <B>ONPERIOD</B> of zero causes a silence for a time interval of <B>OFFPERIOD</B>, and vice versa.
+			It does not make sense for both <B>ONPERIOD</B> and <B>OFFPERIOD</B> to be zero, but this condition is harmless;
+			the speaker state does not change, and <B>WAIT</B> is called repeatedly until the sound specifications change.</P>
+			<P>A period of -1 causes the application to terminate.</P>
+			<UL>
+				<LI>An initialization procedure <B>CLEAR_SPEAKER_GATES</B> which readies the speaker. The initialization procedure
+				must be at PL0.
+			</UL>
+			<P ALIGN="CENTER"><A NAME="Example%205.%20Sound%20Device%20Driver"></A><B>Example 5. Sound Device Driver</B></P>
+			<BLOCKQUOTE>
+				<P><FONT SIZE="2" COLOR="#990000">;************************ SOUND module<BR>
+				;It contains a global code segment (_G), a local code segment (_L),<BR>
+				;a global data segment containing the ONPERIOD, OFFPERIOD variables,<BR>
+				;and two local stack segments.<BR>
+				</FONT><FONT SIZE="2" COLOR="blue">SOUND_DATA32_G SEGMENT USE32 PUBLIC<BR>
+				SOUND_DATA32_G_BEGIN:<BR>
+				ONPERIOD DD 50 </FONT><FONT SIZE="2" COLOR="#990000">;Defaults</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OFFPERIOD DD 50<BR>
+				SOUND_DATA32_G_END:<BR>
+				SOUND_DATA32_G ENDS<BR>
+				SOUND_CODE32_G SEGMENT USE32 PUBLIC<BR>
+				ASSUME CS:SOUND_CODE32_G,DS:SOUND_DATA32_G,SS:SOUND_STACK32_L<BR>
+				SOUND_CODE32_G_BEGIN:<BR>
+				CONVERT_SOUND_PARMS PROC<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;This procedure changes the &quot;user&quot; parameters to clock<BR>
+				;tick units.<BR>
+				;If an error occurs, a default value is supplied.<BR>
+				;We assume EBX is frequency and EDI is duty_cycle</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV EAX,TIMER_VALUE<BR>
+				CMP EBX,-1 </FONT><FONT SIZE="2" COLOR="#990000">;Is parm = -1?</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				JE QUIT_PLAYING<BR>
+				MUL EBX<BR>
+				MOV EBX,EAX </FONT><FONT SIZE="2" COLOR="#990000">;Save result</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV EAX,1193182 </FONT><FONT SIZE="2" COLOR="#990000">;Actual timer input frequency</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				DIV EBX </FONT><FONT SIZE="2" COLOR="#990000">;EAX = period in TIMER_COUNTS</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				CMP EAX,0 </FONT><FONT SIZE="2" COLOR="#990000">;Error if 0</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				JNE CP1 </FONT><FONT SIZE="2" COLOR="#990000">;OK</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV EAX,50 </FONT><FONT SIZE="2" COLOR="#990000">;Use a default period</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				CP1:<BR>
+				MOV ECX,EAX </FONT><FONT SIZE="2" COLOR="#990000">;Save for later use =PERIOD</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV EBX,EDI </FONT><FONT SIZE="2" COLOR="#990000">;Get duty-cycle</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				CMP EBX,100 </FONT><FONT SIZE="2" COLOR="#990000">;Is it within range?</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				JBE CP2 </FONT><FONT SIZE="2" COLOR="#990000">;Yes</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV EBX,50 </FONT><FONT SIZE="2" COLOR="#990000">;No, supply default</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				CP2:<BR>
+				MUL EBX<BR>
+				MOV EBX,100 </FONT><FONT SIZE="2" COLOR="#990000">;Form percentage</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				DIV EBX </FONT><FONT SIZE="2" COLOR="#990000">;EAX = PERIOD*DUTY_CYCLE =ONPERIOD</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				SUB ECX,EAX </FONT><FONT SIZE="2" COLOR="#990000">;ECX = OFFPERIOD</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RET<BR>
+				QUIT_PLAYING:<BR>
+				MOV EAX,-1 </FONT><FONT SIZE="2" COLOR="#990000">;End of list reached</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV ECX,-1<BR>
+				RET<BR>
+				CONVERT_SOUND_PARMS ENDP<BR>
+				CHANGESOUND PROC FAR<BR>
+				CALL CONVERT_SOUND_PARMS </FONT><FONT SIZE="2" COLOR="#990000">;Convert to clock tick units</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Two parameters are returned from CONVERT_SOUND_PARMS.<BR>
+				;This proc uses the parameters<BR>
+				;to modify the ONPERIOD and OFFPERIOD variables.<BR>
+				;NOTE, THIS RUNS IN THE CONTEXT OF THE CALLING TASK.<BR>
+				;INPUT EAX=new onperiod<BR>
+				; ECX=new offperiod</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				PUSH ESI<BR>
+				PUSH DS<BR>
+				MOV ESI,SOUND_DATA32_G_SEL </FONT><FONT SIZE="2" COLOR="#990000">;Load data segment</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV DS,SI<BR>
+				MOV ONPERIOD,EAX </FONT><FONT SIZE="2" COLOR="#990000">;Store new data</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV OFFPERIOD,ECX<BR>
+				POP DS<BR>
+				POP ESI<BR>
+				RET<BR>
+				CHANGESOUND ENDP<BR>
+				SOUND_CODE32_G_END:<BR>
+				SOUND_CODE32_G ENDS<BR>
+				SOUND_CODE32_L SEGMENT USE32 PUBLIC<BR>
+				ASSUME CS:SOUND_CODE32_L,DS:SOUND_DATA32_G,SS:SOUND_STACK32_L<BR>
+				SOUND_CODE32_L_BEGIN:<BR>
+				SOUND_START32:<BR>
+				SOUND_TASK:<BR>
+				CMP ONPERIOD,0<BR>
+				JE ST1<BR>
+				IN AL,PORT_B<BR>
+				OR AL,00000010B </FONT><FONT SIZE="2" COLOR="#990000">;Set speaker data bit</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OUT PORT_B,AL<BR>
+				ST1:<BR>
+				MOV EAX,ONPERIOD </FONT><FONT SIZE="2" COLOR="#990000">;Wait time</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				PCALLF32_32 WAIT_TICKS_GATE_SEL,0<BR>
+				IN AL,PORT_B<BR>
+				AND AL,NOT 00000010B </FONT><FONT SIZE="2" COLOR="#990000">;Clear speaker data bit</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OUT PORT_B,AL<BR>
+				MOV EAX,OFFPERIOD </FONT><FONT SIZE="2" COLOR="#990000">;Wait time</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				PCALLF32_32 WAIT_TICKS_GATE_SEL,0<BR>
+				JMP SOUND_TASK<BR>
+				SOUND_CODE32_L_END:<BR>
+				SOUND_CODE32_L ENDS<BR>
+				SOUND_STACK32_L SEGMENT<BR>
+				SOUND_STACK32_L_BEGIN LABEL WORD<BR>
+				DD 400H DUP(0)<BR>
+				SOUND_STACK32_L_END LABEL WORD<BR>
+				SOUND_STACK32_L ENDS<BR>
+				SOUND_STACK32_L_PL0 SEGMENT<BR>
+				SOUND_STACK32_L_PL0_BEGIN LABEL WORD<BR>
+				DD 400H DUP(0)<BR>
+				SOUND_STACK32_L_PL0_END LABEL WORD<BR>
+				SOUND_STACK32_L_PL0 ENDS</FONT>
+			</BLOCKQUOTE>
+			<P><B><FONT SIZE="1" COLOR="blue">&nbsp;</FONT></B></P>
+			<P><A NAME="7.%20The%20Experiment%20Task"></A><B><FONT SIZE="5">7. </FONT></B><U><B><FONT SIZE="5">The Experiment
+			Task</FONT></B></U></P>
+			<P>The application task changes the global sound specification occasionally by calling CHANGESOUND, then waits
+			by calling WAIT. The application code in this task runs at PL3. In our example application, this task will probably
+			be revised often, as the experimenter tunes the parameters of the experiment.</P>
+			<P><A NAME="7.1.%20Applying%20Protection"></A><B><FONT SIZE="5">7.1. </FONT></B><U><B><FONT SIZE="5">Applying Protection
+			to Application Programs</FONT></B></U></P>
+			<P>Application programs are typically executed as separate tasks. Their code and data segments are PL3 segments
+			in the LDT of the task. This structure gives maximum protection among application tasks and also protects other
+			parts of the operating system from the applications.</P>
+			<P><A NAME="7.2.%20Example%20Code"></A><B><FONT SIZE="5">7.2. </FONT><U><FONT SIZE="5">Example Code</FONT></U></B></P>
+			<P>In the application module, the frequency, duty cycle, and wait period until next change are stored in an assembly-language
+			table. The code loops through this table repeatedly, calling CHANGESOUND and WAIT_MSECS to satisfy the specifications
+			of each entry.</P>
+			<P ALIGN="CENTER"><A NAME="Example%206.%20Experiment%20Task"></A><B>Example 6. Experiment Task</B></P>
+			<BLOCKQUOTE>
+				<P><FONT SIZE="2" COLOR="#990000">;****************** APPLICATION module<BR>
+				;It contains code, data, and three stacks, all defined in APP_LDT<BR>
+				</FONT><FONT SIZE="2" COLOR="blue">USER_SOUND STRUC<BR>
+				FREQUENCY DD 0<BR>
+				DUTY_CYCLE DD 0<BR>
+				DURATION DD 0<BR>
+				USER_SOUND ENDS<BR>
+				APP_DATA32 SEGMENT USE32 PUBLIC<BR>
+				APP_DATA32_BEGIN:<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;The sound table uses the format FREQUENCY, DUTY_CYCLE, DURATION<BR>
+				;FREQUENCY in Hertz<BR>
+				;DUTY_CYCLE in values from 0-100<BR>
+				;DURATION in milliseconds</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				SOUND_TABLE_BEGIN LABEL DWORD<BR>
+				INCLUDE SOUNDS.ASM<BR>
+				SOUND_TABLE_END LABEL DWORD<BR>
+				SOUND_TABLE_PTR DD SOUND_TABLE_BEGIN<BR>
+				APP_DATA32_END:<BR>
+				APP_DATA32 ENDS<BR>
+				APP_CODE32 SEGMENT USE32 PUBLIC<BR>
+				ASSUME CS:APP_CODE32,DS:APP_DATA32,SS:APP_STACK32<BR>
+				APP_CODE32_BEGIN:<BR>
+				APP_START32:<BR>
+				APP_TASK:<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;This task pulls the FREQUENCY values from the SOUND_TABLE<BR>
+				;and loads the sound driver's parameters.<BR>
+				;The SOUND_TABLE_PTR starts at the first table entry and<BR>
+				;is incremented each time until the end of the table. At the<BR>
+				;end, it wraps around to the beginning. If a -1 is found in<BR>
+				;the table, it simply jumps to EXIT. A -1 causes termination<BR>
+				;of the program.</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV ESI,SOUND_TABLE_PTR </FONT><FONT SIZE="2" COLOR="#990000">;Get pointer</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV EBX,[ESI].USER_SOUND.FREQUENCY </FONT><FONT SIZE="2" COLOR="#990000">;Get next frequency</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				MOV EDI,[ESI].USER_SOUND.DUTY_CYCLE </FONT><FONT SIZE="2" COLOR="#990000">;Get next duty cycle</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				PCALLF32_32 CHANGESOUND_GATE_SEL,0 </FONT><FONT SIZE="2" COLOR="#990000">;Set new parms</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV ESI,SOUND_TABLE_PTR<BR>
+				MOV EAX,[ESI].USER_SOUND.DURATION </FONT><FONT SIZE="2" COLOR="#990000">;Get duration</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				ADD DWORD PTR SOUND_TABLE_PTR,TYPE USER_SOUND </FONT><FONT SIZE="2" COLOR="#990000">;Update ptr</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				CMP SOUND_TABLE_PTR,OFFSET SOUND_TABLE_END </FONT><FONT SIZE="2" COLOR="#990000">;Too big?</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				JB APP2 </FONT><FONT SIZE="2" COLOR="#990000">;No</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV SOUND_TABLE_PTR,OFFSET SOUND_TABLE_BEGIN </FONT><FONT SIZE="2" COLOR="#990000">;Yes, reset</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				APP2:<BR>
+				PCALLF32_32 WAIT_MSECS_GATE_SEL,0 </FONT><FONT SIZE="2" COLOR="#990000">;Wait duration</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				JMP APP_TASK<BR>
+				APP_CODE32_END:<BR>
+				APP_CODE32 ENDS<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Define stack segments for all privilege levels<BR>
+				; that can be called by this task.<BR>
+				</FONT><FONT SIZE="2" COLOR="blue">APP_STACK32 SEGMENT<BR>
+				APP_STACK32_BEGIN LABEL WORD<BR>
+				DD 400H DUP(0)<BR>
+				APP_STACK32_END LABEL WORD<BR>
+				APP_STACK32 ENDS<BR>
+				APP_STACK32_PL1 SEGMENT<BR>
+				APP_STACK32_PL1_BEGIN LABEL WORD<BR>
+				DD 400H DUP(0)<BR>
+				APP_STACK32_PL1_END LABEL WORD<BR>
+				APP_STACK32_PL1 ENDS<BR>
+				APP_STACK32_PL0 SEGMENT<BR>
+				APP_STACK32_PL0_BEGIN LABEL WORD<BR>
+				DD 400H DUP(0)<BR>
+				APP_STACK32_PL0_END LABEL WORD<BR>
+				APP_STACK32_PL0 ENDS</FONT>
+			</BLOCKQUOTE>
+			<P><B><FONT SIZE="1" COLOR="blue">&nbsp;</FONT></B></P>
+			<P><A NAME="8.%20Protected%20Mode%20Startup"></A><B><FONT SIZE="5">8. </FONT></B><U><B><FONT SIZE="5">Protected
+			Mode Startup and Termination Module</FONT></B></U></P>
+			<P>There is also a task that belongs to the kernel. It serves as the initial task—the first task dispatched by
+			the initialization procedure. It performs as much of system initialization as can be done in protected mode. It
+			also serves as a watchdog task that waits for a prespecified time, then shuts the kernel down. This guarantees
+			termination in spite of possible failures in the primary application task. It performs as much of the kernel shut-down
+			as can be done in protected mode, then jumps back to the 16-bit segment where shut-down will be completed.</P>
+			<P><A NAME="8.1.%20Applying%20Protection"></A><B><FONT SIZE="5">8.1. </FONT><U><FONT SIZE="5">Applying Protection
+			to Kernel Tasks</FONT></U></B></P>
+			<P>While it is not necessary, it is often convenient for a kernel to have one or more tasks of its own, and this
+			task is an example of such a situation. We use this task to illustrate two points about tasks in general:</P>
+			<UL>
+				<LI>The code in a task can execute at any privilege level, not just PL3. The code in this task executes at PL0,
+				because it is part of the kernel. Its code and data segments are at PL0.
+				<LI>A task does not necessarily have an LDT. All the segments of this task are located in the GDT. This design
+				decision is arbitrary; the segments could also be in an LDT.
+			</UL>
+			<P><A NAME="8.2.%20Example%20Code"></A><B><FONT SIZE="5">8.2. </FONT><U><FONT SIZE="5">Example Code</FONT></U></B></P>
+			<P>This module consists of:</P>
+			<UL>
+				<LI>A compile-time variable KERNEL_TIMEOUT that specifies how long the example may run.
+				<LI>A task that gets control as soon as the system is in protected mode. The task calls various global initialization
+				procedures, then waits KERNEL_TIMEOUT milliseconds, giving the main tasks of the experiment a chance to run. When
+				it gets control again, it is time to terminate the protected mode example. It simply calls the global termination
+				procedures, then jumps to the real-mode termination procedure.
+			</UL>
+			<P ALIGN="CENTER"><A NAME="Example%207.%20Kernel%20Task"></A><B>Example 7. Kernel Task</B></P>
+			<BLOCKQUOTE>
+				<P><FONT SIZE="2" COLOR="#990000">;**************** KERNEL TASK module<BR>
+				;It uses two segments: the kernel code and kernel stack.</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				KERNEL_CODE32 SEGMENT USE32 PUBLIC<BR>
+				ASSUME CS:KERNEL_CODE32,DS:KWAIT_DATA32,SS:KERNEL_STACK32<BR>
+				CLEAR_SPEAKER_GATES PROC<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Clears the timer 2 gate (bit 0) and speaker data (bit 1)</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				PORT_B EQU 61H </FONT><FONT SIZE="2" COLOR="#990000">;I/O port B</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				IN AL,PORT_B<BR>
+				AND AL,11111100B </FONT><FONT SIZE="2" COLOR="#990000">;Clear speaker bits</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OUT PORT_B,AL<BR>
+				RET<BR>
+				CLEAR_SPEAKER_GATES ENDP<BR>
+				KERNEL_TIMEOUT EQU 25000 </FONT><FONT SIZE="2" COLOR="#990000">;Units = milliseconds</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;The kernel terminates after KERNEL_TIMEOUT milliseconds</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				KERNEL_WAIT_VALUE EQU KERNEL_TIMEOUT*1193/TIMER_VALUE<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;The KERNEL_WAIT_VALUE is in units of the clock tick (interrupt period).<BR>
+				;The arithmetic converts from milliseconds to clock tick units.</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				KERNEL_START32:<BR>
+				CALL TIMER_INIT </FONT><FONT SIZE="2" COLOR="#990000">;Initialize timer</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				CALL CLEAR_SPEAKER_GATES </FONT><FONT SIZE="2" COLOR="#990000">;Clear bit0 and bit1</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				CALL ENABLE_LEVEL_0 </FONT><FONT SIZE="2" COLOR="#990000">;Enable timer interrupt</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				STI ;Dnable INTR interrupts<BR>
+				MOV EAX,KERNEL_WAIT_VALUE </FONT><FONT SIZE="2" COLOR="#990000">;Get timeout parameter</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				PCALLF32_32 WAIT_TICKS_GATE_SEL,0 </FONT><FONT SIZE="2" COLOR="#990000">;Wait</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Here it is time to quit--from one of three sources.<BR>
+				;1 KERNEL timeout<BR>
+				;2 overflow<BR>
+				;3 end of sound table</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				KERNEL_SHUTDOWN:<BR>
+				CALL TIMER_RESTORE<BR>
+				PJMPF32_16 RET_CODE16_SEL,RET_REAL </FONT><FONT SIZE="2" COLOR="#990000">;Back to real mode</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				KERNEL_CODE32 ENDS</FONT>
+			</BLOCKQUOTE>
+			<P>&nbsp;<BR>
+			<A NAME="9.%20Real%20Mode%20Startup"></A><B><FONT SIZE="5">9. </FONT><U><FONT SIZE="5">Real Mode Startup and Termination
+			Module</FONT></U></B></P>
+			<P>At startup, the kernel is running in 16-bit real mode. It has several functions to perform before it can start
+			running the 32-bit, protected-mode application.</P>
+			<OL>
+				<LI>Set up the necessary protected-mode structures. In our example, the GDT, IDT, LDT, and TSS structures are defined
+				statically by assembly language declarations. However, because we are using a real-mode loader (COMMAND.COM) that
+				has no idea how to fix up the segment base addresses in protected-mode descriptor tables, we have to fix-up the
+				addresses ourselves.
+				<LI>Enter protected mode.
+				<LI>Switch to the first task.
+			</OL>
+			<P>This example has an additional step to perform at startup: reassign the DOS external interrupts to vectors that
+			do not conflict with protected-mode exceptions. This is necessary because the AT platform uses certain interrupt
+			vectors that are reserved by Intel. These interrupt vectors are assigned to processor exceptions in protected mode.</P>
+			<P>The shutdown procedure reverses the steps performed by startup procedure.</P>
+			<OL>
+				<LI>Return the processor to real mode.
+				<LI>Restore the interrupt vectors.
+				<LI>Return control to DOS.
+			</OL>
+			<P>Table&nbsp;2 summarizes how the segment and gate descriptors mentioned in previous sections are assigned to
+			privilege levels and descriptor tables. Normally, the base addresses in segment descriptors are initialized through
+			the cooperative efforts of the linker and loader. Because we are using a linker and loader that were not designed
+			for this purpose, the start-up procedure puts the base address for each segment in the GDT or in the appropriate
+			LDT.</P>
+			<UL>
+				<P ALIGN="CENTER"><A NAME="Table%202.%20Protection%20Structure"></A><B>Table 2. Protection Structure</B></P>
+			</UL>
+			<CENTER>
+			<P>
+			<TABLE BORDER="1" CELLSPACING="1" WIDTH="576">
+				<TR>
+					<TD WIDTH="4%" VALIGN="TOP">
+						<P>
+						<P ALIGN="CENTER"><B><FONT SIZE="1">PL</FONT></B>
+					</TD>
+					<TD WIDTH="21%" VALIGN="TOP">
+						<P>
+						<P ALIGN="CENTER"><B><FONT SIZE="1">IDT</FONT></B>
+					</TD>
+					<TD WIDTH="25%" VALIGN="TOP">
+						<P>
+						<P ALIGN="CENTER"><B><FONT SIZE="1">GDT</FONT></B>
+					</TD>
+					<TD WIDTH="27%" VALIGN="TOP">
+						<P>
+						<P ALIGN="CENTER"><B><FONT SIZE="1">Sound Task<BR>
+						LDT</FONT></B>
+					</TD>
+					<TD WIDTH="23%" VALIGN="TOP">
+						<P>
+						<P ALIGN="CENTER"><B><FONT SIZE="1">Experiment Task LDT</FONT></B>
+					</TD>
+				</TR>
+				<TR>
+					<TD WIDTH="4%" VALIGN="TOP">
+						<P>
+						<P ALIGN="CENTER"><B><FONT SIZE="1">0</FONT></B>
+					</TD>
+					<TD WIDTH="21%" VALIGN="TOP"><B><I><FONT SIZE="1" COLOR="blue"><BR>
+						<BR>
+						TIMER_ISR_GATE</FONT></I></B></TD>
+					<TD WIDTH="25%" VALIGN="TOP">KWAIT_DATA32<BR>
+						KWAIT_CODE32<BR>
+						SOUND_CODE32_G<BR>
+						SOUND_DATA32_G<BR>
+						KERNEL_CODE32<BR>
+						KERNEL_STACK32<BR>
+						DUMMY_TSS<BR>
+						KERNEL_TSS<BR>
+						SOUND_TSS<BR>
+						APP_TSS<BR>
+						SOUND_LDT<BR>
+						APP_LDT</TD>
+					<TD WIDTH="27%" VALIGN="TOP"><B><FONT SIZE="1" COLOR="blue"><BR>
+						<BR>
+						SOUND_STACK32_L_PL0</FONT></B></TD>
+					<TD WIDTH="23%" VALIGN="TOP"><B><FONT SIZE="1" COLOR="blue"><BR>
+						<BR>
+						APP_STACK32_PL0</FONT></B></TD>
+				</TR>
+				<TR>
+					<TD WIDTH="4%" VALIGN="TOP">
+						<P>
+						<P ALIGN="CENTER"><B><FONT SIZE="1">1</FONT></B>
+					</TD>
+					<TD WIDTH="21%" VALIGN="TOP">&nbsp;</TD>
+					<TD WIDTH="25%" VALIGN="TOP">&nbsp;</TD>
+					<TD WIDTH="27%" VALIGN="TOP"><B><FONT SIZE="1" COLOR="blue"><BR>
+						<BR>
+						SOUND_CODE32_L<BR>
+						SOUND_STACK32_L</FONT></B></TD>
+					<TD WIDTH="23%" VALIGN="TOP"><B><FONT SIZE="1" COLOR="blue"><BR>
+						<BR>
+						APP_STACK32_PL1</FONT></B></TD>
+				</TR>
+				<TR>
+					<TD WIDTH="4%" VALIGN="TOP">
+						<P>
+						<P ALIGN="CENTER"><B><FONT SIZE="1">2</FONT></B>
+					</TD>
+					<TD WIDTH="21%" VALIGN="TOP">&nbsp;</TD>
+					<TD WIDTH="25%" VALIGN="TOP">&nbsp;</TD>
+					<TD WIDTH="27%" VALIGN="TOP">&nbsp;</TD>
+					<TD WIDTH="23%" VALIGN="TOP">
+						<P ALIGN="CENTER">&nbsp;
+					</TD>
+				</TR>
+				<TR>
+					<TD WIDTH="4%" VALIGN="TOP">
+						<P>
+						<P ALIGN="CENTER"><B><FONT SIZE="1">3</FONT></B>
+					</TD>
+					<TD WIDTH="21%" VALIGN="TOP">&nbsp;</TD>
+					<TD WIDTH="25%" VALIGN="TOP"><B><I><FONT SIZE="1" COLOR="blue"><BR>
+						<BR>
+						CHANGE_SOUND_GATE<BR>
+						WAIT_TICKS_GATE<BR>
+						WAIT_MSECS_GATE</FONT></I></B></TD>
+					<TD WIDTH="27%" VALIGN="TOP">&nbsp;</TD>
+					<TD WIDTH="23%" VALIGN="TOP"><B><FONT SIZE="1" COLOR="blue"><BR>
+						<BR>
+						APP_CODE32<BR>
+						APP_DATA32<BR>
+						APP_STACK32</FONT></B></TD>
+				</TR>
+			</TABLE>
+</P>
+</CENTER>
+			<P><A NAME="9.1.%20Applying%20Protection"></A><B><FONT SIZE="5">9.1. </FONT><U><FONT SIZE="5">Applying Protection
+			to Startup and Termination</FONT></U></B></P>
+			<P>Most of this code runs in real mode. For the brief time that it runs in protected mode, it runs at PL0, because
+			the processor always initializes the current privilege level to zero after entering protected mode. Once in protected
+			mode the startup procedure immediately jumps to the initial task, an action that finishes the initialization of
+			protected mode by loading the TR and LDTR registers with functional values.</P>
+			<P><A NAME="9.2.%20Example%20Code"></A><B><FONT SIZE="5">9.2. </FONT><U><FONT SIZE="5">Example Code</FONT></U></B></P>
+			<P>Example&nbsp;8 shows a number of assembly language EQU statements that are useful for defining protected-mode
+			data structures. These are used by the startup code.</P>
+			<P ALIGN="CENTER"><A NAME="Example%208.%20Protected%20Mode%20Equate"></A><B>Example 8. Protected Mode Equates</B></P>
+			<UL>
+				<FONT SIZE="2" COLOR="#990000">;This file contains equate statements that are helpful<BR>
+				;in creating protected-mode data structures.</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				IO_GATE_SEL EQU 68H+3<BR>
+				IO_CALL_SEL EQU 28H<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;DESCRIPTOR FIELD VALUES<BR>
+				;Masks for present bit</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				PRESENT EQU 80H<BR>
+				NOT_PRESENT EQU 0<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Masks for descriptor PL field</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				DPL0 EQU 00H<BR>
+				DPL1 EQU 20H<BR>
+				DPL2 EQU 40H<BR>
+				DPL3 EQU 60H<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Masks for descriptor S bit</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				SEGMENT_DESC EQU 10H<BR>
+				SYSTEM_DESC EQU 0<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Masks for type field of segment descriptors</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				EO_SEG EQU 8 </FONT><FONT SIZE="2" COLOR="#990000">;EXECUTE ONLY</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				ER_SEG EQU 0AH </FONT><FONT SIZE="2" COLOR="#990000">;EXECUTE AND READ</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				EOC_SEG EQU 0CH </FONT><FONT SIZE="2" COLOR="#990000">;EXECUTE ONLY, CONFORMING</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				ERC_SEG EQU 0EH </FONT><FONT SIZE="2" COLOR="#990000">;EXECUTE AND READ, CONFORMING</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RO_SEG EQU 0 </FONT><FONT SIZE="2" COLOR="#990000">;READ ONLY, NORMAL</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RW_SEG EQU 2 </FONT><FONT SIZE="2" COLOR="#990000">;READ/WRITE, NORMAL</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				ROED_SEG EQU 4 </FONT><FONT SIZE="2" COLOR="#990000">;READ ONLY, EXPAND-DOWN</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RWED_SEG EQU 6 </FONT><FONT SIZE="2" COLOR="#990000">;READ/WRITE, EXPAND-DOWN</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				ED EQU 4 </FONT><FONT SIZE="2" COLOR="#990000">;EXPAND DOWN BIT</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Masks for D,B,and G bits of segment descriptors</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				D_BIT EQU 40H </FONT><FONT SIZE="2" COLOR="#990000">;D BIT FOR 32 BIT TYPES</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				B_BIT EQU 40H </FONT><FONT SIZE="2" COLOR="#990000">;B BIT FOR 32 BIT TYPE STACKS</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				G_BIT EQU 80H </FONT><FONT SIZE="2" COLOR="#990000">;G BIT FOR LARGE GRANULARITY</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Type field masks for 32-bit system segments and gates</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				CALL_G_386 EQU 0CH<BR>
+				INT_G_386 EQU 0EH<BR>
+				TRAP_G_386 EQU 0FH<BR>
+				TSS_AVAIL_386 EQU 09<BR>
+				TSS_BUSY_386 EQU 0BH<BR>
+				LDT_DESC EQU 2<BR>
+				TASK_G EQU 5<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Layout of segment descriptor</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				S_DESC_386 STRUC<BR>
+				ELIMIT DW 0<BR>
+				EBASE_L DW 0<BR>
+				EBASE_M DB 0<BR>
+				EACCESS DB 0<BR>
+				E386 DB 0<BR>
+				EBASE_H DB 0<BR>
+				S_DESC_386 ENDS<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Layout of gate descriptor</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				G_DESC_386 STRUC<BR>
+				OFFSET_LOW DW 0<BR>
+				SEGMENT_SELECTOR DW 0<BR>
+				DWORD_COUNT DB 0<BR>
+				GACCESS DB 0<BR>
+				OFFSET_HIGH DW 0<BR>
+				G_DESC_386 ENDS<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Layout of task state segment</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				TSS_STRUC STRUC<BR>
+				RBACKLINK DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;0 --0</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RES1 DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;1 --2</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RESP0 DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;2 --4</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RSS0 DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;3 --8</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RES2 DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;4 --A</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RESP1 DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;5 --C</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RSS1 DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;6 --10</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RES3 DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;7 --12</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RESP2 DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;8 --14</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RSS2 DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;9 --18</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RES4 DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;10--1A</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RCR3 DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;11--1C</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				REIP DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;12--20</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				REFLAGS DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;13--24</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				REAX DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;14--28</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RECX DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;15--2C</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				REDX DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;16--30</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				REBX DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;17--34</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RESP DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;18--38</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				REBP DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;19--3C</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RESI DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;20--40</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				REDI DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;21--44</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RES DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;22--48</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RES5 DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;23--4A</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RCS DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;24--4C</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RES6 DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;25--4E</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RSS DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;26--50</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RES7 DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;27--52</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RDS DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;28--54</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RES8 DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;29--56</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RFS DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;30--58</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RES9 DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;31--5A</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RGS DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;32--5C</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RES10 DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;33--5E</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RLDTR DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;34--60</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RES11 DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;35--62</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RTBIT DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;36--64</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RIOBASE DW 0 </FONT><FONT SIZE="2" COLOR="#990000">;37--66</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				TSS_STRUC ENDS</FONT><B><FONT SIZE="1" COLOR="blue"><BR>
+				&nbsp;</FONT></B>
+				<P>
+			</UL>
+			<P>Example&nbsp;9 shows a number of assembly language macros that are useful when setting up protected mode data
+			structures. The first of these, LGDTD, SGDTD, LIDTD, and SIDTD, are just 32-bit versions of the assembler's LGDT,
+			SGDT, LIDT, and SIDT instructions. The macro PUT_BASE_IN_DESCRIPTOR tricks the assembler and linker into providing
+			the base address of a segment and moves that address into the split base-address fields of a descriptor. The macro
+			INIT_GDTIDT_ADDRESS stores a segment address in the special memory format required by the LIDT and LGDT instructions.</P>
+			<P ALIGN="CENTER"><A NAME="Example%209.%20Protected%20Mode%20Macros"></A><B>Example 9. Protected Mode Macros</B></P>
+			<UL>
+				<FONT SIZE="2" COLOR="blue">LGDTD MACRO PARM1<BR>
+				DB 66H<BR>
+				LGDT PARM1<BR>
+				ENDM<BR>
+				SGDTD MACRO PARM1<BR>
+				DB 66H<BR>
+				SGDT PARM1<BR>
+				ENDM<BR>
+				LIDTD MACRO PARM1<BR>
+				DB 66H<BR>
+				LIDT PARM1<BR>
+				ENDM<BR>
+				SIDTD MACRO PARM1<BR>
+				DB 66H<BR>
+				SIDT PARM1<BR>
+				ENDM<BR>
+				PUT_BASE_IN_DESCRIPTOR MACRO LABEL1,DESCRIPTOR1<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;This macro calculates the real-mode linear address of LABEL1<BR>
+				;and stores it in the base address field of DESCRIPTOR1<BR>
+				;We assume the descriptor is in the DS segment at this time.<BR>
+				;Input, AX= real mode segment, ESI points to descriptor.<BR>
+				;EDI = offset to label in real mode segment</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV EAX,0<BR>
+				MOV AX,SEG LABEL1<BR>
+				SHL EAX,4<BR>
+				MOV ESI,OFFSET DESCRIPTOR1<BR>
+				ADD EAX,OFFSET LABEL1 </FONT><FONT SIZE="2" COLOR="#990000">;add offset of label</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV [ESI].S_DESC_386.EBASE_L,AX<BR>
+				SHR EAX,16<BR>
+				MOV [ESI].S_DESC_386.EBASE_M,AL </FONT><FONT SIZE="2" COLOR="#990000">;NOW BASE IS SET UP</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				ENDM<BR>
+				INIT_GDTIDT_ADDRESS MACRO LABEL2,BASE_VARIABLE<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;The linear address of the GDT/IDT is stored in the appropriate<BR>
+				;variable = BASE_VARIABLE. We assume the BASE_VARIABLE is in<BR>
+				;the DS segment.</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV EAX,0 </FONT><FONT SIZE="2" COLOR="#990000">;CLEAR EAX</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV AX,SEG LABEL2<BR>
+				SHL EAX,4 </FONT><FONT SIZE="2" COLOR="#990000">;EAX = BASE OF DATA SEGMENT</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				ADD EAX,OFFSET LABEL2<BR>
+				MOV BASE_VARIABLE,EAX </FONT><FONT SIZE="2" COLOR="#990000">;SET UP GDT BASE ADDRESS</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				ENDM</FONT><B><FONT SIZE="1" COLOR="blue"><BR>
+				&nbsp;</FONT></B>
+			</UL>
+			<P>The real-mode startup code in Example&nbsp;10 makes heavy use of the equates in Example&nbsp;8 and macros in
+			Example&nbsp;9. All the descriptors used in protected mode are partially defined by equates. The entry point is
+			START. It follows these steps:</P>
+			<OL>
+				<LI>Put base addresses into the statically defined descriptors.
+				<LI>Load the GDTR and IDTR.
+				<LI>Ready the PIC for protected mode by calling PROTECTED_8259.
+				<LI>Change the processor's mode to protected.
+				<LI>Jump to the first task. The PJMPF16_32 macro is used for this purpose because it uses the correct override
+				prefixes for jumping from a 16-bit segment to a 32-bit TSS.
+			</OL>
+			<P>The label RET_REAL marks the code that changes back to real mode. It follows these steps:</P>
+			<OL>
+				<LI>Load segment registers with values appropriate for real mode.
+				<LI>Set the IDTR to point to the real-mode IDT.
+				<LI>Switch to real mode.
+				<LI>Flush the instruction prefetch queue so that addresses previously decoded in protected mode can be decoded
+				again according to real mode rules.
+				<LI>Prepare the PIC for real mode by calling REAL_8259.
+				<LI>Tell DOS that the program is done.
+			</OL>
+			<P>
+			<P ALIGN="CENTER"><A NAME="Example%2010.%20Startup%20and%20Shutdown"></A><B>Example 10. Startup and Shutdown</B>
+			<BLOCKQUOTE>
+				<P><FONT SIZE="2" COLOR="#990000">; ************** Define the real-mode segments **************</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				STACK SEGMENT STACK USE16 </FONT><FONT SIZE="2" COLOR="#990000">;Real-mode stack segment</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				DD 100H DUP(0)<BR>
+				STACK_END LABEL WORD<BR>
+				STACK ENDS<BR>
+				DATA SEGMENT USE16 </FONT><FONT SIZE="2" COLOR="#990000">;Real-mode data segment</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				DATA_BEGIN LABEL WORD<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Define the GDT using equates. Each entry starts with an equate<BR>
+				;that defines the selector for that entry, and ends with a<BR>
+				;structure that puts most of the values in the descriptor. The<BR>
+				;base addresses are not filled in here; they are added at run time.<BR>
+				</FONT><FONT SIZE="2" COLOR="blue">GDT_BEGIN LABEL WORD<BR>
+				NULL_SELECTOR EQU $-GDT_BEGIN </FONT><FONT SIZE="2" COLOR="#990000">;SELECTOR 00H</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				GDT DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;THIS IS THE BEGINNING OF THE GDT</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;NULL DESCRIPTOR</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RET_CODE16_SEL EQU $-GDT_BEGIN<BR>
+				B = PRESENT+DPL0+ER_SEG+SEGMENT_DESC<BR>
+				RET_CODE16_DESC S_DESC_386 &lt;0FFFFH,0,0,B,0,0&gt;<BR>
+				RET_DATA16_SEL EQU $-GDT_BEGIN<BR>
+				B = PRESENT+DPL0+RW_SEG+SEGMENT_DESC<BR>
+				RET_DATA16_DESC S_DESC_386 &lt;0FFFFH,0,0,B,0,0&gt;<BR>
+				DUMMY_TSS_SEL EQU $-GDT_BEGIN<BR>
+				B = PRESENT+DPL0+TSS_AVAIL_386+SYSTEM_DESC<BR>
+				DUMMY_TSS_DESC S_DESC_386 &lt;67H,0,0,B,D_BIT,0&gt;<BR>
+				KERNEL_TSS_SEL EQU $-GDT_BEGIN<BR>
+				B = PRESENT+DPL0+TSS_AVAIL_386+SYSTEM_DESC<BR>
+				KERNEL_TSS_DESC S_DESC_386 &lt;67H,0,0,B,D_BIT,0&gt;<BR>
+				SOUND_TSS_SEL EQU $-GDT_BEGIN<BR>
+				B = PRESENT+DPL0+TSS_AVAIL_386+SYSTEM_DESC<BR>
+				SOUND_TSS_DESC S_DESC_386 &lt;67H,0,0,B,0,0&gt;<BR>
+				APP_TSS_SEL EQU $-GDT_BEGIN<BR>
+				B = PRESENT+DPL0+TSS_AVAIL_386+SYSTEM_DESC<BR>
+				APP_TSS_DESC S_DESC_386 &lt;67H,0,0,B,0,0&gt;<BR>
+				SOUND_LDT_SEL EQU $-GDT_BEGIN<BR>
+				A = SOUND_LDT_END-SOUND_LDT_BEGIN-1<BR>
+				B = PRESENT+DPL0+LDT_DESC+SYSTEM_DESC<BR>
+				SOUND_LDT_DESC S_DESC_386 &lt;A,0,0,B,0,0&gt;<BR>
+				APP_LDT_SEL EQU $-GDT_BEGIN<BR>
+				A = APP_LDT_END-APP_LDT_BEGIN-1<BR>
+				B = PRESENT+DPL0+LDT_DESC+SYSTEM_DESC<BR>
+				APP_LDT_DESC S_DESC_386 &lt;A,0,0,B,0,0&gt;<BR>
+				WAIT_TICKS_GATE_SEL EQU $-GDT_BEGIN+3<BR>
+				B = PRESENT+DPL3+CALL_G_386+SYSTEM_DESC<BR>
+				A = OFFSET WAIT_TICKS<BR>
+				WAIT_TICKS_GATE G_DESC_386 &lt;A,KWAIT_CODE32_SEL,0,B,0&gt;<BR>
+				WAIT_MSECS_GATE_SEL EQU $-GDT_BEGIN+3<BR>
+				B = PRESENT+DPL3+CALL_G_386+SYSTEM_DESC<BR>
+				A = OFFSET WAIT_MSECS<BR>
+				WAIT_MSECS_GATE G_DESC_386 &lt;A,KWAIT_CODE32_SEL,0,B,0&gt;<BR>
+				CHANGESOUND_GATE_SEL EQU $-GDT_BEGIN+3<BR>
+				B = PRESENT+DPL3+CALL_G_386+SYSTEM_DESC<BR>
+				A = OFFSET CHANGESOUND<BR>
+				CHANGESOUND_GATE G_DESC_386 &lt;A,SOUND_CODE32_G_SEL,0,B,0&gt;<BR>
+				KERNEL_CODE32_SEL EQU $-GDT_BEGIN<BR>
+				A = KERNEL_CODE32_END-KERNEL_CODE32_BEGIN-1<BR>
+				B = PRESENT+DPL0+ER_SEG+SEGMENT_DESC<BR>
+				KERNEL_CODE32_DESC S_DESC_386 &lt;A,0,0,B,D_BIT,0&gt;<BR>
+				KERNEL_STACK32_SEL EQU $-GDT_BEGIN<BR>
+				A = KERNEL_STACK32_END-KERNEL_STACK32_BEGIN-1<BR>
+				B = PRESENT+DPL0+RW_SEG+SEGMENT_DESC<BR>
+				KERNEL_STACK32_DESC S_DESC_386 &lt;A,0,0,B,D_BIT,0&gt;<BR>
+				KWAIT_CODE32_SEL EQU $-GDT_BEGIN<BR>
+				A = KWAIT_CODE32_END-KWAIT_CODE32_BEGIN-1<BR>
+				B = PRESENT+DPL0+ER_SEG+SEGMENT_DESC<BR>
+				KWAIT_CODE32_DESC S_DESC_386 &lt;A,0,0,B,D_BIT,0&gt;<BR>
+				KWAIT_DATA32_SEL EQU $-GDT_BEGIN<BR>
+				A = KWAIT_DATA32_END-KWAIT_DATA32_BEGIN-1<BR>
+				B = PRESENT+DPL0+RW_SEG+SEGMENT_DESC<BR>
+				KWAIT_DATA32_DESC S_DESC_386 &lt;A,0,0,B,D_BIT,0&gt;<BR>
+				SOUND_CODE32_G_SEL EQU $-GDT_BEGIN+1<BR>
+				A = SOUND_CODE32_G_END-SOUND_CODE32_G_BEGIN-1<BR>
+				B = PRESENT+DPL1+ER_SEG+SEGMENT_DESC<BR>
+				SOUND_CODE32_G_DESC S_DESC_386 &lt;A,0,0,B,D_BIT,0&gt;<BR>
+				SOUND_DATA32_G_SEL EQU $-GDT_BEGIN+1<BR>
+				A = SOUND_DATA32_G_END-SOUND_DATA32_G_BEGIN-1<BR>
+				B = PRESENT+DPL1+RW_SEG+SEGMENT_DESC<BR>
+				SOUND_DATA32_G_DESC S_DESC_386 &lt;A,0,0,B,D_BIT,0&gt;<BR>
+				GDT_END LABEL WORD<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Define the LDT for the sound task</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				SOUND_LDT_BEGIN LABEL WORD<BR>
+				SOUND_CODE32_L_SEL EQU $-SOUND_LDT_BEGIN+5<BR>
+				A = SOUND_CODE32_L_END-SOUND_CODE32_L_BEGIN-1<BR>
+				B = PRESENT+DPL1+ER_SEG+SEGMENT_DESC<BR>
+				SOUND_CODE32_L_DESC S_DESC_386 &lt;A,0,0,B,D_BIT,0&gt;<BR>
+				SOUND_STACK32_L_SEL EQU $-SOUND_LDT_BEGIN+5<BR>
+				A = SOUND_STACK32_L_END-SOUND_STACK32_L_BEGIN-1<BR>
+				B = PRESENT+DPL1+RW_SEG+SEGMENT_DESC<BR>
+				SOUND_STACK32_L_DESC S_DESC_386 &lt;A,0,0,B,D_BIT,0&gt;<BR>
+				SOUND_STACK32_L_PL0_SEL EQU $-SOUND_LDT_BEGIN+4<BR>
+				A = SOUND_STACK32_L_PL0_END-SOUND_STACK32_L_PL0_BEGIN-1<BR>
+				B = PRESENT+DPL0+RW_SEG+SEGMENT_DESC<BR>
+				SOUND_STACK32_L_PL0_DESC S_DESC_386 &lt;A,0,0,B,D_BIT,0&gt;<BR>
+				SOUND_LDT_END LABEL WORD<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Define the LDT for the application task</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				APP_LDT_BEGIN LABEL WORD<BR>
+				APP_CODE32_SEL EQU $-APP_LDT_BEGIN+7<BR>
+				A = APP_CODE32_END-APP_CODE32_BEGIN-1<BR>
+				B = PRESENT+DPL3+ER_SEG+SEGMENT_DESC<BR>
+				APP_CODE32_DESC S_DESC_386 &lt;A,0,0,B,D_BIT,0&gt;<BR>
+				APP_DATA32_SEL EQU $-APP_LDT_BEGIN+7<BR>
+				A = APP_DATA32_END-APP_DATA32_BEGIN-1<BR>
+				B = PRESENT+DPL3+RW_SEG+SEGMENT_DESC<BR>
+				APP_DATA32_DESC S_DESC_386 &lt;A,0,0,B,D_BIT,0&gt;<BR>
+				APP_STACK32_SEL EQU $-APP_LDT_BEGIN+7<BR>
+				A = APP_STACK32_END-APP_STACK32_BEGIN-1<BR>
+				B = PRESENT+DPL3+RW_SEG+SEGMENT_DESC<BR>
+				APP_STACK32_DESC S_DESC_386 &lt;A,0,0,B,D_BIT,0&gt;<BR>
+				APP_STACK32_PL1_SEL EQU $-APP_LDT_BEGIN+5<BR>
+				A = APP_STACK32_PL1_END-APP_STACK32_PL1_BEGIN-1<BR>
+				B = PRESENT+DPL1+RW_SEG+SEGMENT_DESC<BR>
+				APP_STACK32_PL1_DESC S_DESC_386 &lt;A,0,0,B,D_BIT,0&gt;<BR>
+				APP_STACK32_PL0_SEL EQU $-APP_LDT_BEGIN+4<BR>
+				A = APP_STACK32_PL0_END-APP_STACK32_PL0_BEGIN-1<BR>
+				B = PRESENT+DPL0+RW_SEG+SEGMENT_DESC<BR>
+				APP_STACK32_PL0_DESC S_DESC_386 &lt;A,0,0,B,D_BIT,0&gt;<BR>
+				APP_LDT_END LABEL WORD<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Define the interrupt descriptor table (IDT)</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				IDT_BEGIN LABEL WORD<BR>
+				B = PRESENT+DPL0+INT_G_386+SYSTEM_DESC<BR>
+				A = OFFSET EXCEPTION_HANDLER0<BR>
+				IDT0_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				A = OFFSET EXCEPTION_HANDLER1<BR>
+				IDT1_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				A = OFFSET EXCEPTION_HANDLER2<BR>
+				IDT2_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				A = OFFSET EXCEPTION_HANDLER3<BR>
+				IDT3_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				A = OFFSET EXCEPTION_HANDLER4<BR>
+				IDT4_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				A = OFFSET EXCEPTION_HANDLER5<BR>
+				IDT5_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				A = OFFSET EXCEPTION_HANDLER6<BR>
+				IDT6_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				A = OFFSET EXCEPTION_HANDLER7<BR>
+				IDT7_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				A = OFFSET EXCEPTION_HANDLER8<BR>
+				IDT8_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				A = OFFSET EXCEPTION_HANDLER9<BR>
+				IDT9_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				A = OFFSET EXCEPTION_HANDLER10<BR>
+				IDT10_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				A = OFFSET EXCEPTION_HANDLER11<BR>
+				IDT11_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				A = OFFSET EXCEPTION_HANDLER12<BR>
+				IDT12_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				A = OFFSET EXCEPTION_HANDLER13<BR>
+				IDT13_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				A = OFFSET EXCEPTION_HANDLER14<BR>
+				IDT14_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				A = OFFSET EXCEPTION_HANDLER15<BR>
+				IDT15_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				A = OFFSET EXCEPTION_HANDLER16<BR>
+				IDT16_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				A = OFFSET EXCEPTION_HANDLER17<BR>
+				IDT17_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				DQ (2FH-17) DUP(0)<BR>
+				B = PRESENT+DPL0+INT_G_386+SYSTEM_DESC<BR>
+				A = OFFSET TIMER_ISR<BR>
+				TIMER_ISR_GATE_DESC G_DESC_386 &lt;A,KERNEL_CODE32_SEL,0,B,0&gt;<BR>
+				DQ (37H-30H) DUP(0)<BR>
+				IDT_END LABEL WORD<BR>
+				INITIAL_MASK DB 0 </FONT><FONT SIZE="2" COLOR="#990000">;Initial interrupt mask storage</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OLD_IDT_BASE_LIMIT LABEL FWORD </FONT><FONT SIZE="2" COLOR="#990000">;Real mode vector table address</FONT><FONT
+				SIZE="2" COLOR="blue"><BR>
+				OLD_IDT_LIMIT DW 3FFH </FONT><FONT SIZE="2" COLOR="#990000">;Real mode limit</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OLD_IDT_BASE DD 0 </FONT><FONT SIZE="2" COLOR="#990000">;Real mode base</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Define the data structures used by LGDT and LIDT instructions.</FONT><FONT
+				SIZE="2" COLOR="blue"><BR>
+				GDT_BASE_LIMIT LABEL FWORD </FONT><FONT SIZE="2" COLOR="#990000">;fword means 6 bytes</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				GDT_LIMIT DW (GDT_END-GDT_BEGIN)-1 </FONT><FONT SIZE="2" COLOR="#990000">;THE GDT LIMIT</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				GDT_BASE DD ? </FONT><FONT SIZE="2" COLOR="#990000">;AND BASE ADDRESS OF THE GDT</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				IDT_BASE_LIMIT LABEL FWORD<BR>
+				IDT_LIMIT DW (IDT_END-IDT_BEGIN)-1 </FONT><FONT SIZE="2" COLOR="#990000">;THE IDT LIMIT</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				IDT_BASE DD ? </FONT><FONT SIZE="2" COLOR="#990000">;AND BASE ADDRESS OF THE IDT</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				DUMMY_TSS TSS_STRUC &lt;&gt; </FONT><FONT SIZE="2" COLOR="#990000">;dummy TSS used for 1st task switch</FONT><FONT
+				SIZE="2" COLOR="blue"><BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">; Define task state segments (TSSs) for all tasks</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				INIT_FLAGS EQU 1202H </FONT><FONT SIZE="2" COLOR="#990000">;Initial contents of EFLAGS for</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">; each task. IOPL = 01, IF = 1</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				KERNEL_TSS TSS_STRUC &lt;,,,,,,,,,,\<BR>
+				,,OFFSET KERNEL_START32,INIT_FLAGS,,,,,\<BR>
+				OFFSET KERNEL_STACK32_END,,,,,\<BR>
+				,KERNEL_CODE32_SEL,,KERNEL_STACK32_SEL,\<BR>
+				,KWAIT_DATA32_SEL,,,,,,,,,&gt;<BR>
+				SOUND_TSS TSS_STRUC &lt;,,OFFSET SOUND_STACK32_L_PL0_END,\<BR>
+				SOUND_STACK32_L_PL0_SEL,,,,,,,\<BR>
+				,,OFFSET SOUND_START32,INIT_FLAGS,,,,,\<BR>
+				OFFSET SOUND_STACK32_L_END,,,,,\<BR>
+				,SOUND_CODE32_L_SEL,,SOUND_STACK32_L_SEL,\<BR>
+				,SOUND_DATA32_G_SEL,,,,,,SOUND_LDT_SEL\<BR>
+				,,,&gt;<BR>
+				APP_TSS TSS_STRUC &lt;,,OFFSET APP_STACK32_PL0_END,\<BR>
+				APP_STACK32_PL0_SEL,,\<BR>
+				OFFSET APP_STACK32_PL1_END,\<BR>
+				APP_STACK32_PL1_SEL,,,,\<BR>
+				,,OFFSET APP_START32,INIT_FLAGS,,,,,\<BR>
+				OFFSET APP_STACK32_END,,,,,\<BR>
+				,APP_CODE32_SEL,,APP_STACK32_SEL,\<BR>
+				,APP_DATA32_SEL,,,,,,APP_LDT_SEL\<BR>
+				,,,&gt;<BR>
+				DATA_END LABEL WORD<BR>
+				DATA ENDS<BR>
+				CODE SEGMENT USE16<BR>
+				ASSUME CS:CODE,DS:DATA,SS:STACK<BR>
+				CODE_BEGIN:<BR>
+				PICA00 EQU 20H </FONT><FONT SIZE="2" COLOR="#990000">;master 8259 port 0</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				PICA01 EQU 21H </FONT><FONT SIZE="2" COLOR="#990000">;master 8259 port 1</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				EOI EQU 20H </FONT><FONT SIZE="2" COLOR="#990000">;End-of-interrupt command</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				REAL_8259 PROC<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;This proc restores the master pic to the original setting.</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				MOV AL,11H<BR>
+				OUT PICA00,AL<BR>
+				MOV AL,08H </FONT><FONT SIZE="2" COLOR="#990000">;Base vector = 8</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OUT PICA01,AL<BR>
+				MOV AL,4 </FONT><FONT SIZE="2" COLOR="#990000">;Slave on ir2</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OUT PICA01,AL<BR>
+				MOV AL,1<BR>
+				OUT PICA01,AL<BR>
+				MOV AL,INITIAL_MASK </FONT><FONT SIZE="2" COLOR="#990000">;Restore original mask</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OUT PICA01,AL<BR>
+				IN AL,60H </FONT><FONT SIZE="2" COLOR="#990000">;Must clear keybd interrupt on</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;some machines</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RET<BR>
+				REAL_8259 ENDP<BR>
+				PROTECTED_8259 PROC<BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;This proc moves the 8259 to vector 30-37H and mask everything<BR>
+				;but the keyboard , IRQ1</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				IN AL,PICA01 </FONT><FONT SIZE="2" COLOR="#990000">;Save current mask</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV INITIAL_MASK,AL<BR>
+				MOV AL,11H<BR>
+				OUT PICA00,AL<BR>
+				MOV AL,30H </FONT><FONT SIZE="2" COLOR="#990000">;New type = 30H</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OUT PICA01,AL<BR>
+				MOV AL,4 </FONT><FONT SIZE="2" COLOR="#990000">;Slave on level 2</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OUT PICA01,AL<BR>
+				MOV AL,1<BR>
+				OUT PICA01,AL<BR>
+				MOV AL,11111111B </FONT><FONT SIZE="2" COLOR="#990000">;Mask all for now</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OUT PICA01,AL<BR>
+				RET<BR>
+				PROTECTED_8259 ENDP<BR>
+				START:<BR>
+				MOV AX,DATA<BR>
+				MOV DS,AX </FONT><FONT SIZE="2" COLOR="#990000">;SET UP DATA ADDRESSABILITY</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">;Put base addresses in all segment descriptors</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				PUT_BASE_IN_DESCRIPTOR DUMMY_TSS,DUMMY_TSS_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR KERNEL_TSS,KERNEL_TSS_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR KERNEL_CODE32_BEGIN,KERNEL_CODE32_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR KERNEL_STACK32_BEGIN,KERNEL_STACK32_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR KWAIT_DATA32_BEGIN,KWAIT_DATA32_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR KWAIT_CODE32_BEGIN,KWAIT_CODE32_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR SOUND_CODE32_G_BEGIN,SOUND_CODE32_G_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR SOUND_CODE32_L_BEGIN,SOUND_CODE32_L_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR SOUND_STACK32_L_BEGIN,SOUND_STACK32_L_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR SOUND_STACK32_L_PL0_BEGIN,SOUND_STACK32_L_PL0_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR SOUND_DATA32_G_BEGIN,SOUND_DATA32_G_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR SOUND_LDT_BEGIN,SOUND_LDT_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR SOUND_TSS,SOUND_TSS_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR APP_CODE32_BEGIN,APP_CODE32_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR APP_STACK32_BEGIN,APP_STACK32_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR APP_STACK32_PL1_BEGIN,APP_STACK32_PL1_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR APP_STACK32_PL0_BEGIN,APP_STACK32_PL0_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR APP_DATA32_BEGIN,APP_DATA32_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR APP_LDT_BEGIN,APP_LDT_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR APP_TSS,APP_TSS_DESC<BR>
+				INIT_GDTIDT_ADDRESS GDT_BEGIN,GDT_BASE<BR>
+				INIT_GDTIDT_ADDRESS IDT_BEGIN,IDT_BASE<BR>
+				PUT_BASE_IN_DESCRIPTOR CODE_BEGIN,RET_CODE16_DESC<BR>
+				PUT_BASE_IN_DESCRIPTOR DATA_BEGIN,RET_DATA16_DESC<BR>
+				LGDTD GDT_BASE_LIMIT </FONT><FONT SIZE="2" COLOR="#990000">;Load GDT register</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				CLI<BR>
+				LIDTD IDT_BASE_LIMIT </FONT><FONT SIZE="2" COLOR="#990000">;Load IDT register</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				CALL PROTECTED_8259 </FONT><FONT SIZE="2" COLOR="#990000">;Set up 8259</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV EAX,CR0 </FONT><FONT SIZE="2" COLOR="#990000">;Fetch control register 0</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				OR EAX,1 </FONT><FONT SIZE="2" COLOR="#990000">;Set protection enable (PE) bit</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV CR0,EAX </FONT><FONT SIZE="2" COLOR="#990000">;Go to protected mode</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				JMP S1 </FONT><FONT SIZE="2" COLOR="#990000">;Flush instruction prefetch queue</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				S1:<BR>
+				MOV AX,DUMMY_TSS_SEL </FONT><FONT SIZE="2" COLOR="#990000">;Set up dummy TSS to receive</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				LTR AX </FONT><FONT SIZE="2" COLOR="#990000">;Undefined state from 1st switch</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				</FONT><FONT SIZE="2" COLOR="#990000">; ************** First task switch **************</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				PJMPF16_32 KERNEL_TSS_SEL,0 </FONT><FONT SIZE="2" COLOR="#990000">;switch to kernel task</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				RET_REAL: </FONT><FONT SIZE="2" COLOR="#990000">;Shutdown, back to real mode</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				CLI </FONT><FONT SIZE="2" COLOR="#990000">;Disable interrupts</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV AX,RET_DATA16_SEL </FONT><FONT SIZE="2" COLOR="#990000">;Load seg regs to set limit</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV DS,AX </FONT><FONT SIZE="2" COLOR="#990000">;to real mode 64K value</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV ES,AX<BR>
+				MOV SS,AX<BR>
+				MOV FS,AX<BR>
+				MOV GS,AX<BR>
+				LIDTD OLD_IDT_BASE_LIMIT </FONT><FONT SIZE="2" COLOR="#990000">;Set to vector table address</FONT><FONT SIZE="2"
+				COLOR="blue"><BR>
+				MOV EAX,CR0 </FONT><FONT SIZE="2" COLOR="#990000">;Fetch control register 0</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				AND EAX,07FFFFFFEH </FONT><FONT SIZE="2" COLOR="#990000">;Clear PE bit</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV CR0,EAX </FONT><FONT SIZE="2" COLOR="#990000">;Go back to real mode</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				JMP FAR PTR S16 </FONT><FONT SIZE="2" COLOR="#990000">;Far jump to reload CS</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				S16:<BR>
+				MOV AX,DATA </FONT><FONT SIZE="2" COLOR="#990000">;Load segment registers</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV DS,AX </FONT><FONT SIZE="2" COLOR="#990000">; with real mode values.</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV AX,STACK<BR>
+				MOV SS,AX<BR>
+				MOV SP,OFFSET STACK_END<BR>
+				CALL REAL_8259 </FONT><FONT SIZE="2" COLOR="#990000">;Restore 8259 to real mode values</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				STI </FONT><FONT SIZE="2" COLOR="#990000">;Enable interrupts</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				MOV AX,4C00H </FONT><FONT SIZE="2" COLOR="#990000">;Back to DOS</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				INT 21H </FONT><FONT SIZE="2" COLOR="#990000">;DOS function call</FONT><FONT SIZE="2" COLOR="blue"><BR>
+				CODE_END:<BR>
+				CODE ENDS<BR>
+				AUTONUMLGL</FONT>
+			</BLOCKQUOTE>
+			<P><A NAME="10.%20Compiling%20and%20Executing"></A><B><FONT SIZE="5">10. </FONT></B><U><B><FONT SIZE="5">Compiling
+			and Executing the Example<BR>
+			</FONT></B></U><BR>
+			The example runs on any minimally configured AT-compatible PC with a 32-bit processor. No extended memory is required,
+			nor any peripherals beyond those found on all AT-class machines.</P>
+			<P>The example runs under DOS. It would be more precise to say that it runs alongside DOS, because, although DOS
+			loads the example into memory, the example does not call on any DOS services after it is loaded. No other software
+			is required for execution.</P>
+			<P>Table&nbsp;3 shows the configurations on which the example has been tested. Because it is not very demanding
+			of the assembler, of DOS, or of the hardware system, we expect that it will execute correctly on most other AT-compatible
+			configurations as well.</P>
+			<P><A NAME="Table%203.%20Tested%20Configurations"></A><B><B>Table 3. Tested Configurations</B></B></P>
+			<P>
+			<TABLE BORDER="1" CELLPADDING="4" CELLSPACING="1" WIDTH="392">
+				<TR>
+					<TD WIDTH="54%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">Processor</FONT></TD>
+					<TD WIDTH="22%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">DOS Version</FONT></TD>
+					<TD WIDTH="24%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">MASM Version<BR>
+						<BR>
+						&nbsp;</FONT></TD>
+				</TR>
+				<TR>
+					<TD WIDTH="54%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">33 MHz Intel486 DX Microprocessor</FONT></TD>
+					<TD WIDTH="22%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">5.0</FONT></TD>
+					<TD WIDTH="24%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">6.1</FONT></TD>
+				</TR>
+				<TR>
+					<TD WIDTH="54%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">25 MHz Intel386 DX Microprocessor</FONT></TD>
+					<TD WIDTH="22%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">5.0</FONT></TD>
+					<TD WIDTH="24%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">6.1</FONT></TD>
+				</TR>
+				<TR>
+					<TD WIDTH="54%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">25 MHz Intel486 DX Microprocessor</FONT></TD>
+					<TD WIDTH="22%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">5.0</FONT></TD>
+					<TD WIDTH="24%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">6.1</FONT></TD>
+				</TR>
+				<TR>
+					<TD WIDTH="54%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">50 MHz Intel486 DX2 Microprocessor</FONT></TD>
+					<TD WIDTH="22%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">5.0</FONT></TD>
+					<TD WIDTH="24%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">6.1</FONT></TD>
+				</TR>
+				<TR>
+					<TD WIDTH="54%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">60 MHz Pentium</FONT></TD>
+					<TD WIDTH="22%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">5.0</FONT></TD>
+					<TD WIDTH="24%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">6.1</FONT></TD>
+				</TR>
+				<TR>
+					<TD WIDTH="54%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">33 MHz Intel486 DX Microprocessor</FONT></TD>
+					<TD WIDTH="22%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">5.0</FONT></TD>
+					<TD WIDTH="24%" VALIGN="TOP"><FONT SIZE="1" FACE="Helv">6.0</FONT></TD>
+				</TR>
+			</TABLE>
+</P>
+			<P>The source code for this example is available from the Intel ACCESS forum on the Compuserve network (GO INTELACCESS)
+			as file PMSND1.EXE. A command such as the following will compile and link the example program with MASM 6.0 or
+			6.1: ML /Fl PMSOUND.ASM<BR>
+			Note that some versions of MASM (version 6.1, in particular) use a DOS extender and require the presence of a memory
+			manager, such as EMM386. To execute the example, however, no programs may be present that use protected mode; for
+			example DOS extenders, such as Microsoft Windows, memory managers, such as EMM386 and QEMM-386, and RAM disk programs.
+			Such a software configuration is perhaps most easily obtained by preparing a bootable floppy disk with minimal
+			AUTOEXEC.BAT and CONFIG.SYS files. Reboot the system from the floppy disk just before executing the example program.<BR>
+			<BR>
+			<A NAME="11.%20Where%20to%20go%20from%20here"></A><B><FONT SIZE="5">11. </FONT><U><FONT SIZE="5">Where to Go From
+			Here</FONT></U></B><BR>
+			<BR>
+			We hope you enjoyed your test drive in protected mode. The techniques shown in this example are those that any
+			32-bit, protected-mode operating system needs to use. (The only basic techniques not illustrated are paging and
+			virtual 8086 mode.) The example could serve as the seed for a real-time or embedded kernel, a full fledged OS,
+			or a DOS extender. Possible territories for further exploration might include:<BR>
+			Real device drivers—for example, keyboard, video, disk, instrumentation, and appliances.<BR>
+			Expanded kernel functions—for example, dynamic memory allocation; priority-based, preemptive scheduler; intertask
+			data sharing, message passing, and synchronization.<BR>
+			Exception handlers that provide more information about the location and possible cause of the exception.<BR>
+			Debugger.<BR>
+			Paging.<BR>
+			Dynamic task creation with loader.<BR>
+			Virtual memory with swap file.<BR>
+			Virtual-8086 mode and monitor, to extend DOS or to create multiple V86 tasks.<BR>
+			DOS extender.<BR>
+			Whether you use the example application either as a starting point or as a model for further development, or whether
+			you choose to take advantage of one of the commercially available, 32-bit, protected-mode environments, we wish
+			you a good trip.</P>
+			<P><A NAME="12.%20About%20the%20Authors"></A><B><FONT SIZE="5">12. </FONT><U><FONT SIZE="5">About the Authors</FONT></U></B><BR>
+			Jeff Royer, Royer Associates; (415) 326-8079, Compuserve 71170,2452<BR>
+			Contact Royer Associates for more information about the debugger used for this example and on-site classes covering
+			protected mode.<BR>
+			Loren Stafford, Dynalogic, Inc.; (415) 967-6355, Compuserve 72260,3045<BR>
+			For more information on protected-mode programming, refer to the following documents from Intel Corporation and
+			from other sources. If you can't find a book in your local bookstore, you will be happy to know that many of these
+			books are available from on-line bookstores on Compuserve. Enter FIND BOOK at any &quot;!&quot; prompt to obtain
+			a list of on-line book sources.<BR>
+			To order Intel literature or to obtain literature pricing information in the U.S. and Canada, call or write Intel
+			Literature Sales. In Europe and other international locations, please contact your local sales office or distributor.
+			A list of sales offices and distributors can be found at the back of most Intel publications.</P>
+
+			<P>Intel Literature Sales<BR>
+			P.O. Box 7641<BR>
+			Mt. Prospect, IL 60056-7641<BR>
+			In the U.S. and Canada<BR>
+			call toll free<BR>
+			(800) 548-4725<BR>
+			<BR>
+			<A NAME="13.%20Bibliography"></A><B><FONT SIZE="5">13. </FONT><U><FONT SIZE="5">Bibliography</FONT></U></B><BR>
+			80386 System Software Writer's Guide, Intel order number 231499.<BR>
+			Brey, Barry B. 1993. The Advanced Intel Microprocessors. New York: Macmillan.<BR>
+			Crawford, John H. and Patrick P. Gelsinger. 1987. Programming the 80386. San Francisco: Sybex.<BR>
+			Custer, Helen. 1992. Inside Windows NT. Redmond, WA: Microsoft Press.<BR>
+			Deitel, H.M. and M.S. Kogan. 1992. The Design of OS/2. Reading, MA: Addison-Wesley.<BR>
+			DOS Protected Mode Interface (DPMI) Specification, version 1.0, Intel order number 240977.<BR>
+			Duncan, Ray, ed. 1991. Extending DOS: A Programmer's Guide to Protected-Mode DOS. Reading, MA: Addison-Wesley.<BR>
+			Ezzel, Ben. 1993. The power under the hood—Review: Windows NT. PC Magazine. June 15.<BR>
+			Linthicum, David S. and Steven J. Vaughan-Nichols. 1993. The beast turns beauty—UNIX on Intel. PC Magazine. June
+			15.<BR>
+			Pappas, Chris H. and William H. Murray III. 1988. 80386 Microprocessor Handbook. Berkeley, CA: Osborne McGraw-Hill.<BR>
+			Pentium&amp;trade; Processor User's Manual, Vol. 3: Architecture and Programming Manual, Intel order number 241430.<BR>
+			Prosise, Jeff. 1993. How DOS programs can use over 1MB of RAM. PC Magazine. June 29.<BR>
+			Robinson, Phillip, ed. 1988. Dr. Dobb's Toolbook of 80286/80386 Programming. Redwood City, CA: M&amp;T Publishing.<BR>
+			Salemi, Joe. 1993. IBM's 32-bit challenger revisited—Preview: OS/2 2.1. PC Magazine. June 15.<BR>
+			Schulman, Andrew. 1990. Stalking GP faults. Dr. Dobbs Journal. January and February.<BR>
+			The source code for these articles is available on Compuserve in the Dr. Dobbs forum (GO DDJFORUM) as GPFLT2.ZIP.<BR>
+			TIS committee. Portable Formats Specification and Format Specification for Windows, Intel order number 241597.<BR>
+			Williams, Albert A. 1990. Roll your own DOS extender. Dr. Dobbs Journal. October and November.<BR>
+			The source code for these articles is available on Compuserve in the Dr. Dobbs forum (GO DDJFORUM) as PROT2.ASC.<BR>
+			Williams, Albert A. 1993. DOS and Windows Protected Mode: Programming with DOS Extenders in C. Reading, MA: Addison-Wesley.<BR>
+			In addition to the above printed literature, much information can be obtained on-line in the following Compuserve
+			forums:
+		</TD>
+	</TR>
+</TABLE>
+
+</CENTER>
+
+</BODY>
+
+</HTML>

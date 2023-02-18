@@ -1,0 +1,162 @@
+Tak po opravdu dlouhe dobe pisu zase jednu skolicku...nemam na ne moc 
+casu, protoze maturuju, dokoncuju koules 1.2 atd....proste fofr.
+Protoze jsem zachranoval data z rozpadleho linux disku naucil jsem
+se ext2 filesystem....proto jsem se rozhodl o nem napsat.
+
+Bloky a inody
+=============
+Nejlepe bude zacit s tim, jak UNIX nahlizi na filesystem.
+Unix nema jenom jednu uroven filesystemu kde existuji soubory,
+adresare,korenovy adresar,linky,symbolic linky,device,sockety,fifa
+a kdo vi co jeste...ve sve podstate nahlizi na filesystem
+jako hromadu inod. Inode je v podstate neco jako soubor. muze obsahovat
+data libovolne delky a je urcena cislem. Ty maji svoje data ulozene 
+v blocich, ktere jsou alokacni jednotka disku.Ty samozdrejme maji
+take sve poradove cisla. Vetsinou maji delku 4096,aby se daly dobre
+mapovat do pameti.  Pokud se nejak chce otevrit soubor, musi nejak 
+zjistit jeho inode number a pomoci neho se na nej odkazat. Chce-li 
+nekdo cist z indoy, zjisti napred ve kterych blocich ma ulozena 
+data a potom nacita natvrdo ty bloky. Inoda take vlastni informace
+o pristupovych pravech, clastnicich, casech modifikace atd..
+Proste vsechno co vam bezne unix o souboru rekne plus neco navic
+co potrebuje filesystem.
+
+Specialni inody
+===============
+Nektere inody jsou specialni. Takova typicka specialni inoda je rootovy
+adresar. Vetsinou to je inoda 0,1 nebo nejaky podobny hodne maly cislo.
+Rootovy adresar je vlastne normalni soubor, ktery obsahuje nazvy souboru
+a inody s jejich obsahem. Neobsahuje casy modifikace apod, protoze
+ty vlastni inoda u sebe. To je duvod proc ls je mnohem pomalejsi
+nez dir v dosu. Aby zjistilo vsechny veco co vypisuje-typy, delky
+pristupy a tak musi vlastne kazdou inodu nacist... Z tohoto duvodu
+ma filesystem specialni volani readdir, ktere to dela optimalneji,
+nez kdyby se kazdy soubor otviral a nacital. Presto ale musi naject
+na zacatek kazde inody a to zpusobuje to strasne vrceni pri dirovani
+vetsich adresaru. Proto linux ma specialni directory cache. Jeji funkci
+muzete vyzkouset tim, ze date find / -name qwert. Poprve hrozne
+zurive seekuje-kouka se na zacatky vsech souboru na disku. Podruhe
+ale uz vsechno jde z directory cache a tak disk ani neblikne..a to
+i na 4MB masinach...
+
+Dalsi typicka specialni inoda je inoda, ktera obsahuje spatne bloky..
+i toto je v linuxu reseno elegantne a obecne..je to vlastne skoro-spubor
+ktery ale opravdu neni doporuceno cist :)
+
+Nektere filesystemy maji i inodu se vsemy volnymi bloky...
+
+Je tu vetsinou vice inod, ktere alokuji misto pro ruzne ucely -
+bootovani, swapovani apod..
+
+Normalni inody
+==============
+A potom jsou inody "normalni", ktere reprezentuji veci, ktere se
+na unixackem disku najdete..zakladni jsou:
+1) soubory..to snad nemusim vysvetlovat
+2) adresare .. maji samozdrejme stejny format jako root adresar..
+   proste jsou v nich nejak ulozeny nazvy souboru a odkazy na 
+   jejich inody. Na jednu inodu muze ukazovat libovolne mnoho
+   adresarovych polozek..To jsou hardlinky proste ze jeden
+   soubor ma vic nazvu..muzete je delat pomoci ln file file1
+   Hardlinky samozdrejme nejdou do jinych filesystemu protoze
+   adresarova polozka na jednom disku nemuze ukazovat na inodu jineho
+   disku..a kupodivu hodne unixu nedovoluje delat ani hardlinky
+   na adresare...i kdyz k tomu vlastne neni duvod.
+3) symbolic linky. Ty se snazi resit omezeni zpusobene hardlinky.
+   Jsou to vlastne soubory, ktere maji nastaveny flag-stejne
+   jako treba adresare a obsahuji cestu k jinemu souboru.
+   To resi problemy z linky do jinych filesystemu..uz to neni
+   vec vlastniho filesystemu ale unixu, ktery postupuje tak, ze
+   nacte soubor s linkem a otevre dalsi s jmenem,ktery nacetl.
+   Rika se tomu follow-link. Na druhe strane toto pojeti je pomalejsi-
+   protoze se musi provedst toto: 
+     1) otevrit inoda symbolickeho linku-cteni jednoho bloku
+     2) nacist-cestu- 2. blok
+     3) dobelhat se na misto urcene cestou-otevrit root adresar,
+        nacist root adresar, otevrit podadresar,nacist podadresar....
+     4) otevrit inodu noveho souboru...
+   To je mnohem vice prace..Dalsi rozdil od hardlinku je v tom,
+   ze symbolicke linky samozdrejme nijak nealokuji inodu, na kterou
+   ukazuji, proto smazete-li puvodni file, link se zlomi. U hardlinku
+   se soubor smaze teprve kdyz se vymazou vsechny adresarove polozky,
+   ktere na nej ukazuji. 
+   priklad:
+     mate XF86_S3 nalinkovani do X..pokud to delate symlinkem
+     po prikazu: rm XF86_S3 uz X nenastartujete :)
+     pri hardlinku bezi dal....protoze na Xserver stale ukazuje
+     soubor X
+4) Device:
+   To jsou sobory, ktere nemaji zadny obsah, ale ukazuji na nejaky
+   driver v jadre..pokud ctete z takove device, nectete z inodu, ale
+   volate driver..proto cat /dev/fd0 vam vypise obsah diskety, presto,
+   ze ho na disku nemate. Proto to vubec neni otazka filesystemu, ale
+   dvou atributu, ktere inoda obsahuje-major a minor device number...
+5) FIFA,SOCKETY atd..
+   Jsou implementovany stejne jako device..
+
+Specialni bloky
+===============
+Na disku nejsou jenom bloky s daty ale ruzne specialni...
+Zakladni jsou:
+
+Superblock
+To je neco jako boot u dos disku. Drzi uplne zakladni informace o
+disku. Vetsinou neco jako:
+  Pocet inod na disku
+  Pocet volnych inod
+  Velikost volneho mista na disku
+  velikost jednoho bloku(fragmentu)
+nejaky magic string, podle ktereho se filesystem indentifikuje
+A veci, ktere zajimaji filesystem. Nejcastejsi je
+Flag jestli je fs clean. Protoze updatovani superbloku by dalo
+  hodne prace je updatovan teprve pri unmountu..
+  tento flag urcuje, jestli byl filesystem unmountovan a pokud
+  ne nastartuje se po rebootu fsck, ktere cely disk projde
+  a zkontroluje, jestli je vsechno OK a potom z prislusnym
+  varovan vyplni polozky superbloku tak, aby souhlasily s nascitanymi
+  hodnotami..
+
+Jsou tu take ruzne bloky v reziji filesystemu ( kde ma svoje informace)
+Vetsinou kazda inoda ma svuj blok, jsou tu take ruzne bitmapy, inodove
+tabulky atd...ktere maji za ukol udrzovat informace o volnem miste
+a ukazovat na zacatky jednotlivyych inod.
+
+Srovnani s jinymi navrhy
+========================
+Jsou vlastne tri navrhy filesystemu...inodovy,fatkovy a pomoci 
+hasovacich tabulek..Ja muzu srovnavat jenom inodovy a fatkovy,
+protoze hasovaci neznam..pokud vim je jenom na amize.
+
+Hlavni nevyhody inodoveho filesystemu:
+1) Zbytecna omezeni...odkazy na inody jsou ulozeny v tabulkach
+   vetsinou pevne velikosti a proto kdyz budete delat hodne
+   malych souboru, muze se vam stat, ze je zaplnite a potom
+   uz nebudete moct delat dalsi soubory presto, ze
+   na disku je misto...Tato situace je ale podle meho nazoru
+   v novejsich filesystemech neprosto teoreticka...
+2) Pomaly pristup k atributum souboru...o tom jsem uz psal..
+   ale jinak to proste nejde, pokud chcete mit hardlinky apod...
+Hlavni nevyhody fat systemu:
+1) Priserna fragmentace...U fat systemu je problem mit nejaky
+   nadhled nad volnym mistem. A proto je nemozne nejak optimalizovat
+   rozlozeni dat na disku bez toho, abyste meli celou jeho strukturu
+   v pameti.  Proto je v dosu nutne v jednom kuse speediskovat.
+2) Centralizace. Vsechny dulezita data jsou ulozena v jedne velke
+   odporne tabulce, kterou je relativne tezke drzet update-po kazdem
+   pritupu do fajlu musite doject az na zacatek disku a zmenit
+   hodnoty v tabulce.. pokud dojde k jejimu poskozeni. To se
+   stane velmi rychle muzete se se svym diskem rozloucit.
+   Dos sice ma dve kopie ale to spis jeste vice spomaluje.
+   a jsou celkem blizko sebe :) takze jejich prepsani je porad
+   strasne snadne
+3) Vlastne naprosto nemozne veci jako hardlinky
+4) Pokud se poskodi adresarova polozka je tezke zjistit, kde vlastne
+   file zacina. Zname lost chainy....
+5) Protoze informace o souboru drzi adresarova polozka je nutne
+   pri pristupu do souboru updatoavat nejen obe kopie fatky ale i
+   tu polozku. Proto v dosu si soubor nastavi delku a casy modifikace
+   az po uzavreni. To je ale nepredstavitelne v musltitaskingovych
+   os.
+Co vim ho hasovacich filesystemech:
+Udajne by mely resit omezeni poctu souboru vznikle v inodovych....
+

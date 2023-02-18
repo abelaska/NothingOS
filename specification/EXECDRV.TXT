@@ -1,0 +1,57 @@
+;###############################################################################################
+;# Specifikace driveru pro rozsireni execu
+;###############################################################################################
+;# version 1.1 
+;###############################################################################################
+
+
+Drivery execu musi zajistit :
+   Typove cislo musi mit v rozmezi 8000h...80FFh
+   Drivery musi podporovat minimalne fce 10h a 11h
+   Navraci-li fce 10h v eax errorcode 000yxxxx, pak driver musi podporovat fci 12h 
+   Navraci-li fce 10h v eax errorcode 0003xxxx, pak driver musi podporovat fci 13h
+
+Specifikace fci :
+;###############################################################################################
+Fce 10h - EXEC_Check_Structures
+funkce musi byt podporavana vzdy
+Vstup  : EDX - Selektor na descriptor
+         ES:EDI - parametry spusteni
+Vystup : EAX - Error Code
+             = 00000000h - v poradku
+             = 0000FFFFh - neni muj typ spustitelneho souboru
+             = 0001xxxxh - task potrebuje knihovnu ktera neexistuje
+                         - xxxx urcuje cislo knihovny
+                         - takovato knihovna MUSI podporovat fci 11h
+             = 0003xxxxh - task potrebuje vyssi verzi knihovny nez je k mani
+             = 0007xxxxh - knihovna je mapovana za hranici DS
+         ECX - pocet 4k page ktere musi byt v LDT tasku (pocitano od 1)
+
+;###############################################################################################
+Fce 11h - EXEC
+funkce musi byt podporavana vzdy.
+fuknce musi zajistit vytvoreni code, data, stack (cpl3, cpl0) v LDT tasku a nastavit v TSS 
+spravne hodnoty. Offset unformated, Ports field, LDT a CR3 jsou jiz v TSS nastaveny.
+Vstup   - DS - TSS Alias descriptor
+        - EDX - Selektor na descriptor
+        - v CR3 je pageovaci struktura tasku
+        - v LDT je LDT prave vytvareneho tasku
+        - ES:EDI - parametry spusteni
+Vystup  - EAX = 0 Then OK
+;###############################################################################################
+Fce 12h - Get_Lib_Name
+funkce musi byt podporovana pouze driverama ktere navraceji 0001xxxxh ve fci 10h
+Vstup   -  CX = Cislo knihovny (navracene napr. fci 10h)
+          EDX = Selektor na descriptor
+          (ES:EDI) = pozice, kam ulozi jmeno knihovny
+Vystup  - If EAX <> 0 Then Error else
+          (ES:EDI) obsahuje jmeno knihovny
+;###############################################################################################
+Fce 13h - Get_Lib_Version
+funkce musi byt podporavana driverama, ktere navraceji hodnotu 0003xxxx ve fci 10h
+Vstup   -  CX - cislo jednotky
+          EDX - Selektor na descriptor
+Vystup  -  AX - verze jednotky
+
+
+

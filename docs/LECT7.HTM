@@ -1,0 +1,461 @@
+<HTML>
+<HEADER>
+<TITLE>Lecture 7 - Caching and TLBs; Caching and Demand Paged Virtual Memory</TITLE>
+</HEADER>
+
+<BODY bgcolor="#ffffbb">
+
+<CENTER>
+<H1><font color="#880000">CSCI402 - Operating Systems</H1>
+<H2>Lecture 7 - Caching and TLBs; Caching and Demand Paged Virtual Memory</H2>
+</font></CENTER>
+<table border="2">
+<tr><td>
+<h2><font color="#880000">Administrivia</font></h2>
+<p>Project 2 is due March 14, Sunday, by midnight.  You can download the details from 
+the <a href="http://www-scf.usc.edu/~csci402">class web site</a>.
+</p>
+
+<p>The mid-term is March 12th.  It will be held in SGM 124 at the regular class start time 
+of 2:00pm.  The test will last until 3:15pm.
+</p>
+
+<h2><font color="#880000">Readings for this week</font></h2>
+<p>Sections 3.4 - 3.6
+</p>
+
+<p>This lecture covers Tom Anderson's lectures 14 and 15.
+</p>
+
+</td></tr></table>
+
+<h2>Today's Lecture</h2>
+<h2><font color="#880000">Caching and Translation Lookaside Buffers (TLBs)</font></h2>
+<h3>Translation Lookaside Buffer</h3>
+<p>Now that we know all about caching and how it can help use, let's put a cache 
+between the CPU and main memory that is able to store a certain 
+amount of data (of course it's not as big as main memory).  A cache in this 
+location is typically called a <b>translation lookaside buffer</b>.  For our 
+TLB to work well, it needs to hold pointers 
+to the most frequently used main memory pages.  This saves having to use the page table 
+to find out which page frame is referenced by the virtual page the CPU is looking for. 
+</p>
+
+<p>The TLB is implemented as a hardware table of frequently used address translations. 
+Every memory reference is first compared to the items in the TLB.  If a match is found, the 
+TLB uses its pointers to the page frame in main memory, allowing immediate retrieval of 
+that page from memory.  On a miss, the page table(s) are referenced and the appropriate 
+page frame retrieved.  In addition, an entry in the TLB is made to this page frame.  If 
+the TLB is full, an older entry must be removed.  We will discuss later how we can decide 
+which entry to remove.
+</p>
+
+<p>The access time for a TLB hit is about 5 to 10 nanoseconds.  When page table accesses are 
+required, it can take more than 100 nanoseconds to retrieve a page frame and update the TLB.
+</p>
+
+<h3>How should the TLB be organized?</h3>
+<h4>Sequential Search</h4>
+<p>With this mechanism, which is cheap to implement in hardware, we search each TLB entry 
+in sequential order.  The time required to find an item is not constant, but will average 
+out to be the time to search half of the items in the TLB.  The bigger the TLB, the longer 
+it will take (on average) to find an item.
+</p>
+
+<h4>Direct Mapping</h4>
+<p>With direct mapping, we restrict each virtual page to use a specific entry slot in the 
+TLB.  For example, if we have 16 slots in the TLB and 160 page frames in physical memory, 
+we can map the page frames to the TLB either by allocating 10 consecutive page frames to 
+a TLB slot (page frames 0 - 9 go to TLB slot 1; 10 - 19 go to TLB slot 2; etc), or have 
+every 10th page allocated to the same TLB slot (page frames 0, 10, 20, etc, go to TLB 
+slot 1; page frames 1, 11, 21, etc, go to TLB slot 2; and so on).
+</p>
+
+<p>With either mechanism, we have multiple page frames that are required to compete for a 
+single slot, even when other slots are unused.  If it turns out that 2 page 
+frames that must share the same slot have been 
+both allocated to a single TLB slot, you can have <b>thrashing</b>.  Thrashing is where you 
+have a lot of lot of TLB misses because of contention.  In addition, the page that gets 
+replaced may be the most heavily used page. This is not a good thing!
+</p>
+
+<h4>Hashing Function</h4>
+<p>To minimize the conflicts that can occur with Direct Mapping, we can implement a hashing 
+function.  With a hashing function, we calculate which TLB entry a particular page frame 
+will be allocated to, based upon some algorithm.  Using a hashing function may reduce the 
+number of conflicts, but it still suffers from the problem of possibly eliminating a TLB 
+entry that is heavily used.  It would be much better if we could pick a lightly used page 
+to evict.
+</p>
+
+<h4>Set Associative</h4>
+<p>The ideal for a TLB would allow us to put any page frame in any TLB slot <b>AND</b> we 
+can look up each TLB slot simultaneously. This is called a <b>fully associative</b> TLB. 
+But, we don't always have to go that far.  We can arrange our TLB in a set of N separate 
+banks.  We can do a simultaneous lookup in each bank.  This is called <b>N-way associative</b>.
+</p>
+
+<p>If we have a TLB with 32 entries and 4 banks.  Each bank will have 8 entries.  We can 
+search each of the 4 banks simultaneously.  The time required to find an entry will take 
+at most the time to search 8 TLB entries.
+</p>
+
+<p>The advantage to this scheme is that it minimizes conflicts.  A new page frame reference 
+could possibly go into any of the N banks that we have.  If we use Direct Mapping or use a 
+Hashing Function, we can pick a bank with an unused slot.  In the fully associative TLB, 
+a page frame can go into any TLB slot.
+</p>
+
+<h3>Which TLB Entry to Replace?</h3>
+<p>With the Direct Mapping and hashing functions methods, we have no choice as to 
+which TLB entry is replaced.  However, in the associated TLB, we can use 3 algorithms:
+<ul><li>Random</li>
+<li>Least recently used entry</li>
+<li>Most recently used entry</li>
+</ul>
+<br>We will discuss the details in a bit when we talk about demand paged virtual memory.
+</p>
+
+<h3>Consistency Between TLB and Memory</h3>
+<p>What happens when the CPU does a context switch when we have a TLB?  To maintain 
+protection between processes, we have to invalidate all the TLB entries.  The reason for 
+this is that the entries point to page frames in physical memory.  What were good pages 
+for one process are likely to be not good for the next process.  This means every context 
+switch causes a process to begin by page faulting.
+</p>
+
+<p>In addition, we must ensure that any page that gets modified has the page table bits 
+updated to reflect this fact. At this point, since the TLB only have pointers to page 
+frames, we don't have to do more than that.  When we talk about caching later, there is 
+more involved if we put a hardware cache in the TLB.
+</p>
+
+<h2><font color="#880000">Caching</font></h2>
+<p>Note that the TLB doesn't actually store any data from main memory.  It only stores a 
+pointer to the page frame in physical memory.  If we want to speed things up even more, 
+we can implement some hardware caches.  But first, let's find out how memory is organized. 
+It will help us to understand where our caches should be located.
+
+<h3>Memory Hierarchy</h4>
+<p>Memory is organized around 2 principles:
+<ul><li>The smaller the amount of memory being addressed, the faster you can address it.</li>
+<li>The larger the amount of memory to reference, the cheaper it should be.</li>
+</ul>
+</p>
+
+<p>To speed up the throughput of a computer, we OS writers want to put the frequently 
+accessed pages in small, fast, expensive memory, and put the big piles of information in 
+cheap slow memory.</p>
+
+<p>So, the CPU is much faster than any other component in a computer (including main memory). 
+In addition, main memory is much faster than a hard drive.  <b>Caching</b> is the process 
+of maintaining a copy of data that can be accessed more quickly than the storage medium 
+upon which the data normally resides.  We use caching at each level to avoid having to go 
+to the next level of memory, which is slower.
+</p>
+
+<p>The reasoning behind having something like a cache is that most programs make a large 
+number of references to a small number of pages (we call this locality), i.e., 
+computers do not behave in a random fashion (wouldn't that be tough on programmers).  Thus, 
+only a small fraction of all the pages in a process are actually used at any one 
+point in time.  This active set is called the <b>working set</b>.
+</p>
+
+<p>There are 2 kinds of locality that programs can display:
+<ul><li><b>Temporal Locality</b>: Address references used in the past will be used in the 
+future. Good programs exhibit this kind of behavior.  Jumping all around in your 
+program will cause a lot of page faults, killing performance.</li>
+<li><b>Spatial Locality</b>: References to future address locations will be near those 
+accessed in the immediate past.  This is essentially what the buffers on hard drives today 
+are based upon.  They can store a number of disk blocks in a chip on the hard drive.  When 
+the CPU comes back for the next piece of a file, the hard drive can provide the data more 
+quickly from its own cache.</li>
+</ul>
+
+<h3>Caching Issues</h3>
+<p>A <b>hit</b> for a cache means that we found the item we wanted in the cache.  A 
+<b>miss</b> means that the requested item was not in the cache.  The <b>hit ratio</b> 
+is a percentage of the number of hits divided by the total number of requests.  The 
+<b>Effective Access Time</b> can be calculated based on the probability of a hit or miss. 
+The equation is:
+<br><i><center>Effective access time = P(hit) * cost of hit + P(miss) * cost of miss
+</center></i>
+</p>
+
+<h4>Example</h4>
+<p>We know the following:
+<ul><li>cost of hit = 1</li>
+<li>cost of miss = 1000</li>
+<li>P(hit) = 0.999</li>
+<li>P(miss) = 0.001</li>
+</ul>
+</p>
+
+<p>The effective access time is .001 * 1000 + .999 * 1.0 = 1.999.  In essence, with these 
+numbers, with a hit ratio of 99.9%, our effective access time is doubled, cutting the 
+performance of our computer in roughly half.
+</p>
+
+<h4>Why do we have a cache miss?</h4>
+<p>There are 4 reasons we can have a cache miss.
+<ul><li><b>Compulsory</b>: When a program first starts, the TLB is empty.  Every page 
+reference in the beginning will be a miss.</li>
+<li><b>Capacity</b>: The cache is not big enough to contain the working set for a process.</li>
+<li><b>Conflict</b>: Due to limited associativity (cache entries must be shared in some 
+restricted fashion between pages), pages compete for a single cache entry.</li>
+<li><b>Policy</b>: The caching algorithm is non-optimal, resulting in the elimination of 
+entries that are heavily used.  For instance, a random algorithm could evict a frequently 
+used cache entry.</li>
+</ul>
+
+<h4>When does caching break down?</h4>
+<p>The primary cause of poor caching performance is programs that exhibit bad locality. 
+A good example is matrix manipulation.  Depending on the implementation in the computer, 
+matrix data is either stored sequentially by row, or by column.  For good programming, a 
+programmer must know which is used and ensure that they reference the data in their 
+matrices in the same order.  Otherwise, you can get a page fault with every reference in 
+your matrix.
+</P>
+
+<p>A prime example is the first computer MIPS built.  Someone got the bright idea of allowing 
+the video to be mapped in the TLB.  THe TLB on this computer has 64 slots.  The memory 
+page size was 4K.  Typically, the size of video memory was 1MB.  This makes 256 pages of 
+video required for the video.  Since a video update typically is for the entire screen, or 
+at least a fair piece of it, the entire TLB could be sucked up for the video, or worse, 
+constant page faulting as the 256 video pages competed for 64 slots.
+</p>
+
+<h3>Relationship Between TLB and Hardware Memory Caches</h3>
+<p>As we discussed above, we can put a hardware cache between every level of memory. The 
+figure below provides a schematic of where the most common caches are located.
+<br><center><img src="caches.jpg"></center>
+</p>
+
+<p>The cache between the CPU and the MMU is called a virtually-addressed cache.  It is based 
+on the virtual addresses for user processes.  The cache in the MMU, referenced by the TLB, 
+is called a physically addressed cache, because the TLB converts the virtual addresses to 
+physical addresses before checking the cache.
+</p>
+
+<h3>What Happens when the CPU Modifies an Address?</h3>
+<p>Caches have real pages stored in them.  When the contents of an address is modified, we 
+have an option as to how far we propagate the change.  In an ideal world, we would only 
+update the nearest cache, and only propagate the changes back to slower caches/memory 
+when the CPU is idle.  However, busy computers are seldom idle, at least not often enough 
+to allow the ideal case.  In addition, if power is lost to the computer, or it locks up 
+somehow, any changes not actually stored on the hard drive will be lost.  So we really 
+have two options:
+<br><ul><li><b>Write-Through</b>: The update is immediately sent to the next level in the 
+memory hierarchy. From CPU to physical memory, or from physical memory to the disks.</li>
+<li><b>Write-Back</b>: The update is kept until the items is replaced from the cache, i.e., 
+it gets evicted from the cache because of a context switch or because its slot is needed 
+by a more recent page.  When replaced from the cache, the update is sent to the next level. 
+Because we only update the next level when we have to, we can save a lot of time.  For 
+instance, if you are adding 1 to every element in an array (and the array fits in a small 
+number of pages so that the entire array is in cache), you only write back to physical 
+memory when the process is done or evicted, causing only one write of the updated pages 
+to physical memory, not one for each array element change.</li>
+</ul></p>
+
+<h2><font color="#880000">Caching and Demand Paged Virtual Memory</font></h2>
+<h3>Demand Paging</h3>
+<p>Demand Paging is where you only load pages from disk into memory when an address on that 
+page is needed by the CPU.  You don't have the OS try to figure out ahead of time what pages 
+are needed are load them in advance (called preloading).  As it turns out, some CPUs have 
+hardware that looks ahead to do this.  When the hardware does it, it is called pre-fetching. 
+The goal is to have the pages at least loaded into memory, if not even in cache by the 
+time the CPU is ready for the address.  All this is done without the use of the CPU, however.
+</p>
+
+<p>With this scheme, physical memory becomes a cache for the disks.  The page table can 
+have pointers to either pages that have been loaded into physical memory, or it can have 
+pointers to pages that are still on the disk.  This makes the actual location of the page 
+transparent to the application program (this is a good thing), providing the appearance 
+of infinite virtual address space.
+</p>
+
+<h3>Demand Paging Process</h3>
+<ol><li>The page table has a 'valid' bit.  If the bit is 1, the page is in physical memory. 
+If the bit is 0, the page is on the disk.</li>
+<li>The hardware traps to the OS when an address refers to an invalid page.  This frees the 
+application program from having to know where the page is and can assume it is in memory. 
+In Nachos and MIPS, the OS is involved in dealing with the page table.  A trap to the OS 
+occurs on a TLB miss.</li>
+<li>The OS does the following:
+<ul><li>Chooses an old page to replace (if necessary)</li>
+<li>If the old page being replaced has been modified, the contents of the page are written 
+back to disk.</li>
+<li>Change the page table entry and the TLB entry indicating that the page to be replaced 
+is no longer a modified page.</li>
+<li>Load the new page into memory from disk</li>
+<li>Update the page table entry for the new page</li>
+<li>Continue the thread/process</li>
+</ul>
+</ol>
+
+<h3>Software-Loaded TLB</h3>
+<p>Instead of having the hardware load the TLB, we could have it done by the OS.  This is 
+what is done in Nachos/MIPS.  The assumption is that if the hit rate is high enough, we 
+won't pay too high a penalty for having the OS do the work.  This hides the page table 
+from the application completely.
+</p>
+
+<p>The process works like this:
+<ol><li>The TLB has a 'valid' bit like before.  If it is 1, we use the TLB pointer to 
+the page frame in memory.  If the 'valid' bit is 0, we use the page table.</li>
+<li>The hardware traps to the OS on any TLB misses.</li>
+<li>The OS must do the following:
+<br><ul><li>Check to see if the page is in physical memory. If the page is there, 
+load the page table entry into the TLB.  If the page is not there, go through the 
+page fault process described above.</li>
+<li>Continue the thread</li>
+</ol>
+</p>
+
+<h3>Transparent Page Faults</h3>
+<p>When a page fault occurs, as OS builders, we don't want to disrupt the user program 
+(OK, unless you want to be mean).  We need some mechanism of restarting the instruction 
+in the user program that caused the page fault.  Hardware can help us by keeping track 
+of the faulting instruction and storing the state of the CPU at the time the page fault 
+occurred.  However, we still have to be concerned about side effects.
+</p>
+
+<h4>Side Effects!</h4>
+<p>Instructions that execute partially and change the state of the CPU are instructions 
+that cause side effects.  The trick is keeping track of what has occurred so that we 
+don't do something twice.
+</p>
+
+<p>For example, the assembly code instruction:
+<br><center><i>mov (sp)+,10</i></center>
+</p>
+
+<p>Increments the value stored in the CPU register sp (the parenthesis mean take the 
+contents of sp and the plus sign means to increment the value) and stores the value at 
+virtual address 10.  The side effect in this instruction is whether the increment of sp 
+has occurred when the page fault for address 10 occurs (we are assuming that the page 
+holding this address is not in the TLB, or a hardware cache).  If we don't keep track of 
+what we have already done, we may do a double increment after servicing the page fault.
+</p>
+
+<p>We have two solutions for this problem: <b>unwind the side-effects</b> and <b>
+finish-off the side-effects</b>.  Unwinding the side effects means that we undo any 
+partial work the instruction has performed.  Finishing-off the side effects means that 
+we have kept track of what portions of an instruction have already executed so that we 
+can pick up where we left off.
+</p>
+
+<h3>Page Replacement Policies</h3>
+<p>We finally come back to this.  The issue is how to decide which page to evict from our 
+physical memory (remember that physical memory is really just a cache for our disk; what 
+we discuss here works for any cache).
+</p>
+
+<h4>Random</h4>
+<p>We could pick a page at random and kick it out, but just like for our TLB, this is 
+really a bad algorithm.  The page that is picked has no relation to the usage patterns.
+</p>
+
+<h4>FIFO</h4>
+<p>This algorithm always removes the oldest pages in memory.  This is fair, in that each 
+page stays in memory about the same amount of time.  However, being fair is not always 
+being efficient.  Just like the random algorithm, the pages picked for removal in this way 
+are not related to usage, either.
+</p>
+
+<h4>MIN (Optimal)</h4>
+<p>We will pick a page for replacement that won't be used for the longest amount of time 
+in the future.  Though this algorithm is optimal, it is not practical, since we really 
+can't predict exactly when a page is going to be used.  But maybe we can approximate this, 
+somehow.
+</p>
+
+<h4>LRU (Least Recently Used)</h4>
+<p>LRU uses history to determine which page to kick out of memory.  We remove the page not 
+accessed for the longest time.  We are assuming that if a page hasn't been referenced for 
+awhile, that means it is not really needed.  The problem with this algorithm is that we 
+can't afford to have enough hardware in our cache to keep track of exactly when a page was 
+brought into memory.  We have to approximate age in some way.
+</p>
+
+<h4>Worst Case Page Faulting</h4>
+<p>LRU does badly when the next page referenced is the LRU page.  This is because the page 
+you are referencing was just kicked out of the cache.  FIFO has the same problem.  So, 
+worst case is that every page reference causes a page fault.
+</p>
+
+<p>MIN, on the other hand, does not suffer from this worst case performance.  With MIN, 
+after the initial loading of page frames into the cache, you get 1/N page faults, where N 
+is the number of page frames.  This is because with MIN, you are not throwing away the 
+oldest page, you are throwing away the page that won't be used for the longest time.  Worse 
+case is that you have N+1 pages in your process, but only N page frames available.  If you 
+reference the one page not in the cache, you have to go N more references before you will 
+get another miss, since MIN will select the page to kick out that is N references away.
+</p>
+
+<h4>Can Adding More Memory Reduce Page Faults?</h4>
+<p>Adding more page frames does not help FIFO.  That is because the pages in memory have 
+no relation to each other for differing numbers of page frames.  However, LRU and MIN have 
+a linear improvement in page faults when the number of page frames available is increased. 
+This is due to the fact that the pages in the cache for N available slots is a subset of the 
+pages in memory when there are N+1 available slots.
+</p>
+
+<h3>Implementing LRU</h3>
+<p>The perfect way to implement LRU is to keep an exact time stamp of when the page was loaded. 
+However, depending on how you store time, you need 32 or 64 bits for each page table entry. 
+This makes your page table even bigger, without necessarily improving performance that much. 
+We can do pretty good by approximating the true time.
+</p>
+
+<h4>Clock Algorithm</h4>
+<p>We approximate LRU by replacing one of the old pages, not necessarily the oldest page.  We 
+do this as follows:
+<br><ul><li>Arrange the physical pages in a circle (the book has a schematic in Chapter 3). 
+We use a pointer like a clock hand.</li>
+<li>The hardware keeps a USE bit for each physical page frame that we will use to determine 
+if a page has been used recently or not.</li>
+<li>The hardware will set the USE bit each time a page is referenced.  If the USE bit is 
+not set, the page hasn't been accessed for awhile and might be a candidate for eviction.</li>
+<li>On a page fault, we advance the clock hand pointer and check the USE bit.  If it is 1,
+we set it to 0 and advance the hand one more step.  We do this because we don't want to 
+remove pages that have been used recently, but we also want to guarantee that we get a 
+page to replace.  If the USE bit is 0, we replace the page.</li>
+</ul>
+
+<p>Because we set the USE bit to 0 as the hand advances, the algorithm always finds a page. 
+However, we only have 2 classes of pages (based on the USE bit): young and old.  Perhaps 
+a few more classes would improve performance.
+</p>
+
+<h4>Nth Chance</h4>
+<p>With Nth Chance, we don't throw a page away until the clock hand goes by N times.  The 
+OS will maintain a counter for each entry and increment it each time the hand goes by. 
+However, if the USE bit is 1, we will clear it (like we did earlier) and set the counter 
+to 0, as well.  If the USE bit is 0, we just increment the counter.  If the counter is 
+greater than N, we replace the page.
+</p>
+
+<p>The big question, is how to pick the value for N.  If we have a big N, we have a good 
+simulation of LRU.  The problem is that the clock hand can go around a lot of times before 
+it finds a page (not a good thing, necessarily).  If N is 2, it is just like the Clock 
+algorithm.
+</p>
+
+<h3>Core Map (Inverse Page Table)</h3>
+<p>The page table maps virtual pages to physical page frames.  A Core Map goes the other 
+way.  Do we really need one?  For the clock algorithm we certainly do.  The Clock algorithm 
+uses page frames, not virutal pages.  Why?  Well, we certainly have a lot more virtual 
+pages possible than page frames (remember the apparently infinite virtual memory).  Using 
+page frames keeps the size of the clock down.  Thus, we need the core map to map these 
+physical pages to the virtual pages they represent.
+</p>
+
+<p>There is also the issue of mapping multiple virtual pages onto a single physical page 
+(we call this sharing).  If all of these virtual pages are in our clock and we kick one 
+out, what happens to the others?  They should all be evicted for consistency, but we have 
+no way of knowing which ones they are without searching all the pages in the clock.
+</p>
+
+</body>
+</html>

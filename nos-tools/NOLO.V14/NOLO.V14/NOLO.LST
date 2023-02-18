@@ -1,0 +1,225 @@
+Turbo Assembler	 Version 3.2	    20/03/01 10:45:25	    Page 1
+nolo.ASM
+
+
+
+      1					 ; version 1.4
+      2					 .386
+      3
+      4	    0000			 Code Segment Public Use16 Para	'Code'
+      5					 Assume	CS:Code;DS:Nothing;ES:Nothing;
+      6
+      7	    0000			 Start:
+      8	    0000  EB 18	90		   jmp	 main
+      9	    0003  4E 4F	4C 4F 20 31 2E+	 Starting	    db 'NOLO 1.4'
+     10		  34
+     11		  =0008			 startint_len	    equ	($-Starting)
+     12	    000B  01F0			 base		    dw 01f0h ;+11
+     13	    000D  0000			 blocks_count	    dw 0
+     14	    000F  0000			 Block_size	    dw 0 ; v sektorech
+     15	    0011  00000000		 Address_sector_LBA dd 0
+     16		  =0012			 wr_offs	    equ	(startint_len+1) shl 1
+     17
+     18	    0015			 skok_kernel:
+     19					   ;skoci na kernel
+     20	    0015  EA			   db	 0eah
+     21	    0016  0000			   dw	 0 ; offset - IP
+     22	    0018  0000			   dw	 0 ; segment - CS
+     23
+     24	    001A			 main:
+     25	    001A  FA			   cli
+     26	    001B  33 FF			   xor	 di, di
+     27	    001D  8E DF			   mov	 ds, di
+     28	    001F  B8 9000		   mov	 ax, 09000h
+     29	    0022  8E C0			   mov	 es, ax
+     30	    0024  BE 7C00		   mov	 si, 07c00h
+     31	    0027  B9 00F4r		   mov	 cx, offset konec
+     32	    002A  FC			   cld
+     33	    002B  F3> A4		   rep	 movsb
+     34
+     35					  ; skoci na rutinu nacteni kernelu
+     36	    002D  EA			  db 0EAh
+     37	    002E  0032r			  dw offset nacti_kernel
+     38	    0030  9000			  dw 09000h
+     39
+     40	    0032			 nacti_kernel:
+     41	    0032  FA			   cli
+     42	    0033  B8 8000		   mov	 ax, 08000h
+     43	    0036  8E D0			   mov	 ss, ax
+     44	    0038  33 C0			   xor	 ax, ax
+     45	    003A  8B E0			   mov	 sp, ax
+     46
+     47	    003C  B8 0003		   mov	 ax, 3
+     48	    003F  CD 10			   int	 10h
+     49
+     50	    0041  0E			  push	 cs
+     51	    0042  1F			  pop	 ds
+     52	    0043  68 B800		  push	 0b800h
+     53	    0046  07			  pop	 es
+     54	    0047  BE 0003r		   mov	 si, offset starting
+     55	    004A  B4 0F			   mov	 ah, 0fh
+     56	    004C  33 FF			   xor	 di, di
+     57	    004E  B9 0008		   mov	 cx, startint_len
+Turbo Assembler	 Version 3.2	    20/03/01 10:45:25	    Page 2
+nolo.ASM
+
+
+
+     58	    0051			 napis:
+     59	    0051  AC			   lodsb
+     60	    0052  AB			   stosw
+     61	    0053  49			   dec	 cx
+     62	    0054  75 FB			   jnz	 short napis
+     63
+     64	    0056  8B EF				     mov    bp,	di
+     65	    0058  45				     inc    bp
+     66	    0059  45				     inc    bp
+     67
+     68	    005A  0E				     push   cs
+     69	    005B  07				     pop    es
+     70	    005C  BF 00F4r			      mov   di,	offset konec
+     71	    005F  BB 0011r			      mov   bx,	offset Address_sector_LBA
+     72	    0062  33 C9				      xor   cx,	cx
+     73	    0064  41				      inc   cx
+     74	    0065  57				     push   di
+     75	    0066  E8 001C			      call  Read_disk
+     76	    0069  5B				     pop    bx
+     77
+     78						      ;nacteni kernelu
+     79	    006A  8B 0E	000Dr			      mov   cx,	word ptr ds:[blocks_count]
+     80	    006E  33 FF				      xor   di,	di
+     81	    0070  8E C7				      mov   es,	di
+     82	    0072			 load_blocks:
+     83	    0072  53 51				    push    bx cx
+     84	    0074  8B 0E	000Fr			      mov   cx,	word ptr ds:[block_size]
+     85	    0078  E8 000A			      call  Read_disk
+     86					 ; zjistime, jestli se ma nacist dalsi block
+     87	    007B  59 5B				    pop	    cx bx
+     88	    007D  83 C3	04			      add   bx,	4
+     89	    0080  49				      dec   cx
+     90	    0081  75 EF				      jnz   short load_blocks
+     91	    0083  EB 90				      jmp   short skok_kernel
+     92
+     93					 ; vstup: CX - kolik sektoru precist
+     94					 ;	  bx - ofs ukazatel na pozici, kde je ulozena pocatecni	LBA adresa
+     95	    0085			 Read_disk:
+     96	    0085  8B 16	000Br			      mov   dx,	word ptr ds:[BASE]
+     97	    0089  8B 07				      Mov   Ax,	word ptr ds:[bx]
+     98
+     99	    008B  80 C2	03			      Add   Dl,3
+    100	    008E  EE				      Out   Dx,Al
+    101	    008F  86 C4				      Xchg  Al,Ah
+    102	    0091  FE C2				      Inc   Dl
+    103	    0093  EE				      Out   Dx,Al
+    104
+    105	    0094  8B 47	02			      mov   ax,	word ptr ds:[bx+2]
+    106
+    107	    0097  FE C2				      Inc   Dl
+    108	    0099  EE				      Out   Dx,Al
+    109
+    110	    009A  FE C2				      Inc   Dl
+    111	    009C  80 E4	0F			      And   Ah,0Fh
+    112	    009F  B0 E0				      Mov   Al,11100000b  ;disk	= master
+    113	    00A1  0A C4				      Or    Al,Ah
+    114	    00A3  EE				      Out   Dx,Al
+Turbo Assembler	 Version 3.2	    20/03/01 10:45:25	    Page 3
+nolo.ASM
+
+
+
+    115
+    116	    00A4  80 EA	04			      Sub   Dl,4
+    117	    00A7  8A C1				      Mov   Al,cl
+    118	    00A9  EE				      Out   Dx,Al
+    119
+    120	    00AA  80 C2	05			      Add   Dl,5
+    121	    00AD  B0 20				      Mov   Al,020h
+    122	    00AF  80 E5	01			      And   Ch,001h
+    123	    00B2  0A C5				      Or    Al,Ch
+    124	    00B4  EE				      Out   Dx,Al
+    125
+    126	    00B5  EC			 Wait0003 :   In    Al,Dx
+    127	    00B6  A8 80				      Test  Al,80h
+    128	    00B8  75 FB				      Jnz   short Wait0003
+    129	    00BA  A8 08				      Test  Al,08
+    130	    00BC  74 20				      Jz    short ATA_Error
+    131
+    132	    00BE  80 EA	07			      Sub   Dl,07
+    133
+    134	    00C1  8A E1				      Mov   Ah,cl
+    135	    00C3			 Wait0007 :
+    136	    00C3  B9 0080			      Mov   CX,128
+    137	    00C6  F3> 66| 6D			      Rep   Insd
+    138	    00C9  80 C2	07			      Add   Dl,7
+    139	    00CC  EC			 Wait0008 :   In    Al,Dx
+    140	    00CD  A8 80				      Test  Al,80h
+    141	    00CF  75 FB				      Jnz   short Wait0008
+    142	    00D1  A8 01				      Test  Al,01h
+    143	    00D3  75 09				      Jnz   short ATA_Error
+    144	    00D5  83 EA	07			      Sub   Dx,7
+    145	    00D8  FE CC				      Dec   Ah
+    146	    00DA  75 E7				      Jnz   short Wait0007
+    147	    00DC  EB 04				      jmp   short read_ok
+    148	    00DE			 ATA_Error :
+    149	    00DE  B0 45			   mov	 al, 'E'
+    150	    00E0  EB 02			   jmp	 short napis_result
+    151	    00E2			 Read_ok:
+    152	    00E2  B0 2E			   mov	 al, '.'
+    153	    00E4			 Napis_result:
+    154	    00E4  06 57			  push	 es di
+    155					   ; napise tecku
+    156	    00E6  68 B800		   push	 0B800h
+    157	    00E9  07			   pop	 es
+    158	    00EA  8B FD			   mov	 di, bp
+    159	    00EC  B4 0F			   mov	 ah, 0fh
+    160	    00EE  AB			   stosw
+    161	    00EF  8B EF			   mov	 bp, di
+    162	    00F1  5F 07			  pop	 di es
+    163	    00F3  C3			   ret
+    164	    00F4			 konec:
+    165					 ; dd pocatecni	pozice cteni bloku
+    166
+    167	    00F4			 Code Ends
+    168					 end Start
+Turbo Assembler	 Version 3.2	    20/03/01 10:45:25	    Page 4
+Symbol Table
+
+
+
+
+Symbol Name			  Type	 Value
+
+??DATE				  Text	 "20/03/01"
+??FILENAME			  Text	 "nolo	  "
+??TIME				  Text	 "10:45:25"
+??VERSION			  Number 0314
+@CPU				  Text	 0F0FH
+@CURSEG				  Text	 CODE
+@FILENAME			  Text	 NOLO
+@WORDSIZE			  Text	 2
+ADDRESS_SECTOR_LBA		  Dword	 CODE:0011
+ATA_ERROR			  Near	 CODE:00DE
+BASE				  Word	 CODE:000B
+BLOCKS_COUNT			  Word	 CODE:000D
+BLOCK_SIZE			  Word	 CODE:000F
+KONEC				  Near	 CODE:00F4
+LOAD_BLOCKS			  Near	 CODE:0072
+MAIN				  Near	 CODE:001A
+NACTI_KERNEL			  Near	 CODE:0032
+NAPIS				  Near	 CODE:0051
+NAPIS_RESULT			  Near	 CODE:00E4
+READ_DISK			  Near	 CODE:0085
+READ_OK				  Near	 CODE:00E2
+SKOK_KERNEL			  Near	 CODE:0015
+START				  Near	 CODE:0000
+STARTING			  Byte	 CODE:0003
+STARTINT_LEN			  Number 0008
+WAIT0003			  Near	 CODE:00B5
+WAIT0007			  Near	 CODE:00C3
+WAIT0008			  Near	 CODE:00CC
+WR_OFFS				  Number 0012
+
+Groups & Segments		  Bit Size Align  Combine Class
+
+CODE				  16  00F4 Para	  Public  CODE
+

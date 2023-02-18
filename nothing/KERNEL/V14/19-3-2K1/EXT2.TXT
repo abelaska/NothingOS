@@ -1,0 +1,8 @@
+-inody se musi lokovat rovnomerne nezi vsechny groupy
+ -zjisti, ve ktere groupe je min inod, nez v ostatnich a tam se inoda alokuje
+ 
+-bloky pro inody se lokuji ve stejne groupe jako je inoda
+ -alokuji se po vice
+ 
+-symlink muze byt jen v ramci daneho FS
+-hardlink se dela jako polozka v adresari na inodu, ktera uz je nejakemu nazvu souboru prirazena

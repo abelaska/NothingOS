@@ -1,0 +1,404 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-2">
+   <meta name="KEYWORDS" content="multitasking, multithreading, proces, vlakno, thread, deadlock, starvation">
+   <meta name="GENERATOR" content="Mozilla/4.6 [en] (Win95; I) [Netscape]">
+</head>
+<body>
+
+<h2>
+Multitasking & Multithreading</h2>
+
+<h3>
+Úvod</h3>
+Multitasking (nebo také "multi-tasking", "multi-processing", "multiprogramming",
+"concurrency") je technika používaná operačními systémy pro využívání jednoho
+procesoru více nezávislými procesy. To přináší jak některé výhody, tak
+samozřejmě i jisté nevýhody.
+<ul>Nejdříve tedy klady:
+<li>
+umožňuje kdykoli přejít k jinému programu, aniž bychom byli nuceni přerušovat
+rozdělanou práci</li>
+
+<li>
+usnadňuje implementaci činností, které musí probíhat paralelně, jako například
+správa počítačové sítě</li>
+
+<li>
+jednotlivé programy mohou lépe spolupracovat, neomezují se pouze na výměnu
+souboru, ale mohou navzájem ovlivňovat svoji činnost</li>
+
+<li>
+umožňuje realizaci multiuživatelského systému</li>
+
+<li>
+umožňuje lepší využití kapacity výpočetního systému</li>
+
+<br> 
+<p> 
+<p> Za hlavní nevýhody jsou považovány tyto:
+<li>
+špatně navržený systém může při běhu většího množství programů negativně
+ovlivnit funkčnost toho programu, se kterým uživatel právě pracuje. To
+se projeví např. extrémním zpomalením, zvýšením doby odezvy na uživatelský
+příkazy a podobně. Problém především u kooperativního multitaskingu</li>
+
+<li>
+realizace multitaskingu se neobejde bez správy procesů a ta má nějakou
+vlastní režii - spotřebovává procesorový čas. V krajním případě může dojít
+až k zahlcení systému, kdy veškerý nebo alespoň naprostá většina procesorového
+času je spotřebovávána na režii. Hrozí především u preemptivního multitaskingu.</li>
+
+<li>
+realizace Multitaskingového operačního systému je složitější a tudíž i
+většina firem si za něj nechá více zaplatit (zlatou vyjímkou je Linux).
+Takový systém má také větší nároky na hardware počítače (větší RAM, rychlejší
+procesor, více místa na disku, více.....). To je také uváděno jako jeden
+z důvodů proč v době, kdy už existovalo množství kvalitních a spolehlivých
+multitaskingových operačních systému byl stále nejpoužívanější jednoúlohový
+MS-DOS. Zde je ovšem nutno poznamenat, že například multitaskingový OS
+EPOC požadoval při minimální konfiguraci jen 512kB operační paměti a procesor
+NEC V30 s taktem 3,84 MHz!!</li>
+
+<li>
+pokud není OS spojen s dostatečným systémem zabezpečení, zvyšuje se riziko
+ztráty dat. A to v případě, že chyba jednoho procesu způsobí zhroucení
+celého OS (ukázkovým příkladem mohou být Windows 3.11, ale bohužel i verze
+pozdější, i když už v menší míře).</li>
+</ul>
+První multitaskingové operační systémy byly vytvořeny začátkem 60. let.
+Byly to OS na velkých sálových počítačích. Na počítačích typu PC se začali
+používat poměrně nedávno.
+<h3>
+Realizace multitaskingu</h3>
+Většina dnešních počítačů je osazena pouze jedním procesorem. Procesy samozřejmě
+nemohou na jednom procesoru být zpracovávány společně. OS tedy musí zajistit,
+aby procesor zpracovávání jednotlivých procesů střídal v krátkých časových
+intervalech, což se uživateli jeví jako současné zpracovávání úloh.
+<br>Existují tří hlavní způsoby jak toho dosáhnout:
+<br>a) task switching
+<br>b) cooperative multitasking
+<br>c) pre-emptive multitasking
+<h4>
+Task switching</h4>
+- přepínání programů
+<br>OS s přepínáním programů je přímým předchůdcem kooperativního multitaskingu.
+Vznikl na interaktivních systémech na základě poměrně jednoduché úvahy:
+nejzřetelnější výhodou multitaskingu pro uživatele je možnost přejít z
+jedné aplikace k druhé, bez nutnosti ukončení práce. Přepínání programů
+je dosaženo tzv. vzájemným voláním, což není vlastnost přímo OS, ale jednotlivých
+programů. Ty mohou umožnit spuštění jiného programu a práci s ním, po ukončení
+tohoto programu se obnoví stav původního programu. Vzájemné volání bylo
+rozšířeno zejména u programů pro Apple Macintosh a dnes se s ním setkáme
+i u programů pod MS-DOS (tam se ale obvykle nevolá přímo program, ale příkazový
+interpret). Existují dvě skupiny OS s přepínáním programů:
+<ul>
+<li>
+systémy s omezeným přepínáním: umožňuje přepínat mezi hlavním programem
+a několika speciálními programy - accessories (pomůcky). Ty jsou vytvořeny
+zvláštním způsobem právě pro přepínání a deklarují se při startu OS.</li>
+
+<li>
+systémy s neomezeným přepínáním umožňují spuštění několika běžných programů
+a přepínání mezi nimi.</li>
+</ul>
+Pokud přecházíme od jednoho programu k druhému, chceme vlastně tento program
+přerušit takovým způsobem, abychom mohli jeho běh po nějakém čase obnovit.
+Musíme tedy důležité informace uložit někam na vnější paměť. To by znamenalo
+obrovské množství informací - obsah celé operační paměti, obsah registrů
+procesoru, nastavení různých zařízení, stav pomocných procesorů (blitter,
+kanály) atd. Takové řešení by bylo značně neefektivní a v některých případech
+i nemožné. Obsah operační paměti se neukládá, ale pouze se zajistí, aby
+část, kterou daný proces využívá, nemohla být použita jiným procesem. Málokterý
+program využívá všechna zařízení, bylo by proto naprosto zbytečné, starat
+se o všechny. Program může být také požádán, aby se dostal před přerušením
+do předem definovaného stavu: ukončil práci s periferními zařízeními i
+s obrazovkou (kanály, blitter), ukončil výpočty v pohyblivé řadové čárce
+(koprocesor) atp. Dále můžeme program přimět, aby po obnovení práce nespoléhal
+na obsah registrů procesoru. Zbude pak jen naprosté minimu údajů, které
+musíme uložit - pouze nastavení zásobníku a obsah obrazovky. Tyto údaje
+jsou uloženy pro všechny momentálně rozpracované úlohy v tabulce, která
+se nazývá kontext. Programy, které mají v paměti svůj kontext se nazývají
+procesy (task).
+<br>Pokud je třeba přepnout z aktivního procesu na jiný proces, například
+na základě nějakého signálu uživatele, OS vyčká až proces zavolá službu,
+kterou oznamuje, že je v "přerušitelném" stavu (to je každý proces povinen
+pravidelně dělat, a OS mají tuto službu obvykle kombinovanou s jinými službami
+OS (často např. přerušení od klávesnice), aby ji program nemohl obejít).
+Pak OS uloží do tabulky na místo odpovídající dosud aktivnímu procesu adresu
+vršku jeho zásobníku (přečte ji z patřičného registru procesoru). Nakonec
+systém zjistí z tabulky adresu zásobníku nového procesu a zavede ji do
+patřičného registru procesoru. Ukončí službu a od té chvíle běží nový proces
+- došlo k přepnutí kontextu (context switch) - byl odebrán procesor starému
+procesu a přidělen procesu novému.
+<br>Podrobněji: Těsně před přepnutím kontextu obsahuje zásobník procesu
+číslo 1 (aktivní) na vrcholku návratovou adresu pro návrat ze systémové
+služby zpět do kódu procesu. Dříve, než dojde k návratu, však přepnutí
+kontextu změní zásobník. Ve chvíli návratu je tedy aktivní zásobník procesu
+číslo2, na jehož vrcholu je samozřejmě také návratová adresa, ale tentokrát
+do procesu číslo 2 - a tam se systémová služba vrátí.
+<br>Při vytváření procesu je vytvořen tomuto procesu zásobník, na který
+je uložena adresa jeho první instrukce a adresa tohoto zásobníku je uložena
+do kontextu.
+<br> 
+<br> 
+<h4>
+Cooperative multitasking</h4>
+- kooperativní multitasking
+<br>Jeho princip vychází přímo z mechanizmu přepínání programů. Tam mohlo
+dojít k přepnutí kontextu pouze na žádost uživatele. To vedlo k tomu že,
+značné množství procesorového času bylo nevyužito. To si tvůrci kooperativního
+multitaskingu uvědomovali a byli vedeni snahou tento nevyužitý čas přidělit
+jinému procesu. V případě, že aktivní proces například čeká na stisk klávesy,
+může být spuštěn proces jiný. Poté co tento proces zavolá přerušovací službu
+vrátí se procesor ke zpracovávání původního procesu. Pokud ten stále nedostal
+signál od klávesnice bude se situace opakovat. Proces čekající, v tomto
+případě na stisk klávesnice, se nazývá proces na popředí (foreground),
+procesy na pozadí (background) jsou pak ty, které využívají procesorový
+čas, který by jinak byl promarněn. Takovýto multitasking byl použit např.
+u Windows 3.x.
+<br>Kooperativní multitasking má všechny výhody, které poskytuje systém
+s neomezeným přepínáním programů. Navíc lépe využívá procesor.
+<br>Vyznačuje se ale některými závažnými nevýhodami:
+<ul>
+<li>
+zpomalení procesu na popředí se odvíjí od toho jak je proces běžící na
+pozadí naprogramován.</li>
+
+<li>
+nelze použít pro realizaci paralelních úloh</li>
+
+<li>
+může dojít k situaci že přerušovací služba procesu na pozadí nebude nikdy
+zavolána (nekonečná smyčka). Dojde pak k zablokování nejen tohoto procesu,
+ale celého systému. S tím je samozřejmě spojena velmi reálná možnost ztráty
+dat ostatních spuštěných aplikací. Kooperativní multitasking tedy není
+a nemůže být z tohoto hlediska bezpečný.</li>
+
+<li>
+programování aplikací pro kooperativní multitasking je omezeno množstvím
+konvencí. Veškerá časově náročnější činnost programu musí být rozdělena
+na kratší úseky oddělené voláním "přerušovací" služby. To vedlo k tomu,
+že řada firem označila své programy "foreground only" čímž je tento systém
+degradován pouze na systém s neomezeným přepínáním</li>
+
+<li>
+celkově není realizace kooperativního multitaskingu jednodušší než preemptivního</li>
+
+<br> 
+<p> 
+<br> 
+<br> </ul>
+
+<h4>
+Pre-emptive multitasking</h4>
+- preemptivní multitasking
+<br>Hlavní nevýhodou předchozího řešení je tedy to, že každý proces musí
+s OS spolupracovat. Toto omezení odstraňuje právě preemptivní multitasking.
+Ten umožňuje přerušení kteréhokoli procesu na kterémkoli místě, aniž by
+proces sám do toho musel nějakým způsobem zasahovat. U kooperativního multitaskingu
+proces zajišťuje svoji nezávislost při svém opětovném spuštění na registrech
+procesoru, koprocesoru, stavu blitteru, I/O procesorů,... Není ovšem možné
+toto všechno uložit do kontextu, je nutné to nějakým rozumným způsobem
+obejít. Do kontextu se uloží pouze stav procesoru a případně koprocesoru
+a s ostatními prvky systému je povoleno pracovat jen jedinému procesu.
+Jejich stav v případě přerušení procesu se tedy nemusí ukládat, protože
+jiný proces s nimi nemůže pracovat. S tím se ovšem objevuje nebezpečí zablokování
+procesů. Proto moderní OS zakazují používání systémových prostředků všem
+procesům kromě speciálně vyhrazených systémových procesů. Takový proces
+se nazývá server a udržuje si informace o svých klientech, kterým poskytuje
+služby umožňující jim nepřímo využívat dané zařízení.
+<br>Zpracovávání procesů se velmi rychle střídá (řádově desítky až stovky
+milisekund) a tak vzniká dojem paralelního zpracování. Velikost intervalu,
+po jehož uplynutí dochází ke střídání procesů se nazývá časové kvantum
+(time-slice). Po vypršení časového kvanta tedy dojde k zastavení jednoho
+procesu a spuštění dalšího. Střídání úloh je obvykle realizováno pomocí
+vnějšího přerušení od čítače, který čítá hodinové pulsy a po uplynutí předem
+definované doby, tzv. základního časového intervalu - tiku velikosti jednotek
+až desítek milisekund, generuje žádost o přerušení. OS při každém tiku
+provede některé nutné servisní úkoly (např. aktualizace systémového času)
+a pokud zjistí, že procesu vypršelo časové kvantum, přeruší jeho činnost.
+To se nazývá preempcí.
+<br>Preemptivní multitasking umožňuje nastavení priorit jednotlivých procesů.
+<br><b>Přidělování procesoru</b>
+<br>Přidělování procesoru procesům provádí dva moduly OS: plánovač (scheduler)
+a dispečer (dispatcher). Scheduler z fronty čekajících procesů ve swapovací
+oblasti vybírá procesy, které budou nahrány do paměti a tak připraveny
+ke spuštění dispečerem. Dispečer pak vybírá podle určitých kriterií z fronty
+procesů, které jsou připraveny ke spuštění ten, který bude opravdu spuštěn.
+<p> <b>Uzavírání zdrojů</b>
+<br>Za jistých okolností potřebují procesy k systémovým prostředkům výlučný
+přístup. Pokud proces získal výlučný přístup říkáme, že zdroj uzavřel.
+To je nutné, aby nedošlo k časové závislosti procesů. K časové závislosti
+procesu s jinými procesy může dojít jen tehdy, když proces vykonává určitou
+část svého kódu, kterou nazýváme kritickou oblastí. Musíme tedy zajistit,
+aby v určitý časový okamžik byl v kritické oblasti pouze jeden z procesů.
+Této podmínce se říká podmínka vzájemného vyloučení (mutual exclusion).
+Vzájemné vyloučení se realizuje tak, že první proces, který chce se zdrojem
+manipulovat, zdroj uzavře. Po uzavření zdroje tento proces vstupuje do
+kritické oblasti a ostatní procesy musí počkat, dokud tento proces kritickou
+oblast neopustí. Jakmile proces kritickou oblast opustí, do kritické oblasti
+může vstoupit další proces. Říkáme také, že proces zdroj otevřel (uvolnil).
+<br>Uzavírání zdrojů tedy není nic jiného než realizace podmínky vzájemného
+vyloučení procesů.
+<p> <b>Realizace vzájemného vyloučení</b>
+<br>Vzájemné vyloučení lze realizovat nejrůznějšími způsoby. Ty se nejčastěji
+dělí do dvou kategorií a to z hlediska stavu, ve kterém se nacházejí procesy
+čekající na vstup do kritické oblasti. Ty jsou buď ve stavu aktivního čekání
+nebo ve stavu zablokování.
+<br>Zatímco procesy ve stavu aktivního čekání neustále testují splnění
+určité podmínky, aby mohly vstoupit do kritické oblasti, a tím spotřebovávají
+procesorový čas (jsou zařazovány dispatcherem ke zpracování), tak při řešení,
+při kterém jsou procesy ve stavu zablokování je jednoduše proces, který
+se neúspěšně pokusil vstoupit do kritické oblasti, zablokován a tudíž není
+dispatcherem nadále zařazován ke zpracování. Poté co jiný proces opustí
+danou kritickou oblast je tento proces probuzen, dispatcher jej časem zařadí
+ke zpracování a proces může do kritické oblasti vstoupit. Nedochází tedy
+ke zbytečnému spotřebovávání procesorového času.
+<br>Oba dva způsoby se mohou řešit pomocí zámku nebo semaforu.
+<p> <b>Vzájemné vyloučení realizované zámkem</b>
+<br>Zámek je procesy sdílená proměnná. Procesy ji mohou nastavovat na různé
+hodnoty. Pokud ji některý z procesů nastaví na nenulovou hodnotu, oznamuje
+tím ostatním procesům to, že vstoupil do kritické oblasti. Pokud je hodnota
+zámku nulová, znamená to, že se žádný z procesů v kritické oblasti nenachází.
+Kdyby ovšem tento systém pracoval následovně mohlo by se stát, že do kritické
+oblasti vstoupí i více procesů: 1. Na počátku bude zámek = 0.
+<br>2. Proces testuje hodnotu zámku. Je-li jeho hodnota nulová pokračuje
+bodem 3. Není-li tomu tak provádí opakované testování hodnoty zámku dokud
+se hodnota zámku nezmění na 0 (do kritické oblasti nevstoupí).
+<br>3. Nastaví zámek na 1 a vstoupí do kritické oblasti. .
+<br>4. Těsně před výstupem z kritické oblasti nastaví zámek = 0
+<p> Pokud by ovšem byl proces A mezi body 2. a 3. přerušen preempcí
+a jiný proces B se pokusil vstoupit do této kritické oblasti a nevystoupil
+by z ní do dalšího volání procesu A vstoupily by do kritické oblasti oba
+dva procesy. Tomu je nutné nějakým způsobem zabránit. Jsou používané tyto
+tři možnosti:
+<ul>
+<li>
+během čtení a nastavení zámku se zakáže přerušení od hodin - není to příliš
+vhodné řešení a ani se nepoužívá</li>
+
+<li>
+použije se speciální instrukce, která jak otestuje hodnotu zámku tak případně
+nastaví i jeho novou hodnotu - ne všechny procesory takovou instrukci mají</li>
+
+<li>
+softwarové řešení - používá běžných strojových instrukcí, ale je náročnější
+na čas Při použití zámku jsou procesy čekající na vstup do kritické oblasti
+ve stavu aktivního čekání. Proto používání techniky zámku není nejvhodnější.</li>
+</ul>
+Někdy se technika zámku pozměňuje tak, že proces po zjištění, že zámek
+je uzavřen, požádá operační systém o zablokování na určitou dobu a opětovný
+test zámku provede až po svém probuzení. To sice omezuje plýtvání procesorovým
+časem, ale na druhé straně může podstatně prodloužit dobu čekání procesu
+(neboť uvolněný zdroj si může mezitím uzavřít jiný proces) .
+<br><b>Vzájemné vyloučení realizované semaforem</b>
+<br>Toto řešení je vhodnější. Semafor je proměnná nabývající hodnoty 0,1,2,......,
+n. Semafory musí být implementovány operačním systémem jako služba systému.
+<br>Pomocí semaforu lze implementovat vzájemné vyloučení následujícím způsobem:
+<br>1. Na počátku je semafor (s) nastaven např. na hodnotu 1 (s=1)
+<br>2. Před vstupem do kritické oblasti je testována hodnota s. Pokud je
+větší jak 0 (s != 0) sníží se o 1 (s = s - 1). Pokud je s = 0 je proces
+pozastaven. Po svém probuzení a opětovném spuštění dokončí operaci, tj.
+sníží hodnotu s o 1 (s = s - 1)
+<br>3. Před opuštěním kritické oblasti proces zvýší s o 1 (s = s + 1).
+Jeden z pozastavených procesů je probuzen
+<p> <b>Uváznutí procesů - deadlock</b>
+<br>V multitaskingových operačních systémech může při uzavírání zdrojů
+snadno dojít k tak zvanému uváznutí procesů. Dojde k tomu jestliže dva
+či více procesů na sebe navzájem čekají. (viz. obr.)
+<center><img SRC="images/deadl.gif" ALT="Deadlock" NOSAVE height=287 width=334>
+<br>Obr.deadlock</center>
+Proces A si uzavřel Zdroj I. a Proces B si uzavřel Zdroj II. Poté se snaží
+Proces A uzavřít Zdroj II., ale ten je uzavřen Procesem B. OS proces A
+tedy zablokuje. Proces B se snaží uzavřít Zdroj I. a je OS také zablokován.
+<br>Řešením může být tzv. úplné vyhrazení prostředků tzn., že při spuštění
+procesu budou zablokovány veškeré zdroje, které by mohl tento proces během
+své činnosti potřebovat. Je zřejmé že, takové řešení je značně neefektivní
+a vede k snížení průchodnosti systému. Další možností je, že v případě,
+kdy je zdroj, který proces potřebuje, uzavřen už jiným procesem, tak proces
+uvolní všechny ostatní zdroje, které si pro sebe uzavřel a požádá OS o
+pozastavení. Po určité době je proces opět probuzen a pokusí se uzavřít
+si pro sebe zdroje, které potřebuje pro předepsanou činnost. Při takovéto
+strategii nemůže nikdy dojít k uváznutí procesů, ale procesy se mou dostat
+do stavu, který se nazývá starvation - stárnutí procesů (viz. níže).
+<br>Jiným řešením je, že na množině zdrojů {Rn}je definováno uspořádání
+R1<R2<.....<Rn a zdroje jsou přidělovány každému procesu v pořadí
+definovaným tímto uspořádáním, v alokačním grafu zdrojů nemůže vzniknout
+cyklus . Nemůže proto dojít k uváznutí procesů. To se nazývá Hierarchické
+přidělování prostředků. V předchozím příkladě by to znamenalo, že by se
+Proces B snažil nejdříve uzavřít Zdroj I., ale vzhledem k tomu, že ten
+by již byl vyhrazen Procesu A došlo by k zablokování Procesu B. Proces
+A by si pak bez problému uzavřel i Zdroj II., dokončil svoji činnost a
+oba zdroje uvolnil. Proces B by pak udělal totéž. Proces uzavírá zdroje
+v pořadí tak, jak je potřebuje. Jakmile jeden ze zdrojů nemůže uzavřít,
+uvolní všechny dosud uzavřené zdroje, požádá operační systém o zablokování
+na určitou dobu a po čase se o uzavření zdrojů pokusí znovu. Je možná i
+kombinace těchto dvou řešení.
+<br>této strategii nemůže dojít k uváznutí procesů, procesy se však mohou
+dostat do stavu, který se nazývá stárnutí procesů.
+<p> <b>Stárnutí procesů - starvation</b>
+<br>Procesy sice nečekají na otevření určitého zdroje, jsou v omezené míře
+stále aktivní, ale nepodaří se jim uzavřít si všechny potřebné zdroje.
+Předpokládejme, že jsou dva procesy a dva zdroje. Oba procesy pro úspěšné
+dokončení své činnosti potřebuje vždy dva zdroje. Oba dva si tedy uzavřou
+vždy jeden zdroj. Po určité době se procesy pokusí uzavřít druhý zdroj.
+Ten je ale již vyhrazen jinému procesu a procesy tedy uvolní již uzavřené
+zdroje a požádají OS o přerušení. Po jejich opětovném spuštění se celá
+situace může opakovat.
+<center><img SRC="images/starv.gif" ALT="Starvation" NOSAVE height=219 width=397>
+<br>Obr. Starvation</center>
+Vyhnout se tomu dá např. tak, že doba, po kterou budou jednotlivé procesy
+pozastaveny , bude různě dlouhá.
+<h2>
+Multithreading</h2>
+Je to schopnost programu sám sebe větvit. Program se dělí na tzv. vlákna
+(threads of executions), která se zdají běžet současně. To má výhodu v
+tom, že při provádění nějaké náročnější a dlouhotrvající práce (např. ukládání
+dlouhého souboru) se aplikace "nezasekne". Programátor zpravidla vytvoří
+jedno vlákno frontové, které vyrobí všechna okna, jedno nebo více vláken
+bezfrontových, která počítají. Je známé tzv. pravidlo 1/10 sekundy "Cokoli
+trvá déle než 1/10 sekundy, mělo by se provádět v novém bezfrontovém vláknu."
+<br>Zatímco u multitaskingu jsou jednotlivé procesy zcela oddělené (vlastní
+paměť,...) při multithreadingu všechna vlákna (jedné aplikace) sdílejí
+stejné systémové zdroje - paměť, soubory, globální proměnné, každé vlákno
+má svůj zásobník, tj. automatické proměnné jsou pro každé vlákno zvlášť.
+<br>Ve Windows 3.x každá běžící aplikace je jedna úloha. OS přiděluje CPU
+těmto úlohám používáním kooperativního multitaskingu a spoléhá na aplikace,
+že umožní předání procesorového času jiné úloze. Ve Win32 se už nemluví
+o úlohách, ale o procesech a vláknech. Proces se může skládat z jednoho
+či více vláken. Proces a vlákna jsou přerušovány preempcí. Ve Windows 3.x
+byla každá úloha pouze jedním vláknem. Program byl prováděn od začátku
+do konce. Ve Win32 proces vzniká jako jedno vlákno, které může vytvořit
+vlákna další běžící na pozadí (formátování diskety, provádění složitého
+výpočtu, vyhledávání,....). Těmto vláknům je procesorový čas předáván zcela
+nezávisle, jako samostatným programům.
+<p> <b>Thread Scheduling</b>
+<br>Rozhodnutí kterému vláknu přidělit procesorový čas a na jak dlouho
+je pro OS složitý proces. V prvé řadě bere Scheduler ohled na priority
+jednotlivých vláken. Ve Windows 95 a NT je možno přidělit každému vláknu
+hodnotu priority od 0 do 31, čím vyšší číslo, tím vyšší priorita. Hodnota
+priority 31 je reservována pro extrémně krizová vlákna (např. získávání
+dat v reálném čase) zatímco hodnota 0 je používána OS pro téměř zbytečná
+vlákna, která se spouštějí pouze v případě, že je procesorový čas nevyužíván.
+Nejpoužívanější jsou hodnoty od 7 do 11.
+<br>Po několika milisekundách scheduler vyhodnotí situaci a předá procesorový
+čas vláknu s nejvyšší prioritou. Pokud jsou dvě či více vláken se stejnou
+prioritou je spuštěno to od jehož posledního provádění uběhlo nejvíce času.
+Vlákna s vyšší prioritou jsou tedy prováděny před vlákny s nižší prioritou
+a vlákna s nízkou prioritou nikdy nepřeruší vlákna s vysokou prioritou.
+Neznamená to ale, že vlákno s nižší prioritou nebude nikdy spuštěno. Jsou-li
+dvě vlákna A a B s prioritou 10 a 9 bude prováděno vlákno A. Pokud má vlákno
+A prázdnou frontu zpráv tzn., že dokud nepřijde další zpráva nemá nic na
+práci, je toto vlákno pozastaveno a může být spuštěno vlákno B. Pozastavenému
+vláknu není přidělován procesorový čas dokud neobdrží nějakou zprávu, která
+ho probudí a přeruší preempcí vlákno B, jež bylo doposud prováděno. Mnoho
+vláken tak stráví značné množství času ve stavu čekání na nějakou vstupní
+událost.
+<BR><BR>
+<A HREF= "http://www.geocities.com/SiliconValley/Cable/1135/index.html"> index</A>
+<br><BR> 
+<div align=right><font size=-2>William Wollis 1999</font></div>
+</body>
+</html>

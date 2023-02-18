@@ -1,0 +1,1616 @@
+EXT2FS
+======
+
+Co to je
+========
+Nazev znamena second extended filesystem..
+Je to filesystem pouzivany os linux,hurd a dalsimi.. Je celkem oblibeny
+protoze je velmi rychly-tvrdi ze je rychlejsi nez fast filesystem
+z FreeBSD ale nevim...je mnohem rychlejsi nez vsechny ostatni me zname.
+Obsahuje algoritmus na intelignetni alokaci volneho mista, proto
+se opravdu malo fragmentuje (zkousel jsem defragmentovat svuj
+5 let stary disk a nejake zvlastni zrychleni jsem nedocilil...presto
+ze na disku fragmentace je..jsou jednotlive fragmenty souboru blizko
+sebe a tak neni zpomaleni tak drasticke jako v dosu.
+Podporuje dlouhe nazvy a fura dalsich sarapeticek...
+
+Limity:
+
+              Minix FS  Ext FS    Ext2FS    Xia FS
+Max FS Size     64MB    2 GB      4TB       2GB
+Max file size   64MB    2 GB      2GB       64MB
+Max file name   14/30 c 255 c     255 c     248 c
+3 times support No      No        Yes       Yes
+Extensible      No      No        Yes       No
+var. block siz. No      No        Yes       No
+
+Mountovani
+==========
+Bere nekolik prepinacu:
+bsddf,minixdf
+   meni standard pro statfs
+bsdgroups|sysvgroups
+   Jak urcovat gid pri vytvareni souboru:
+    BSD: podle adresare
+    SVR4 : gid procesu nebo gid adresare pokud je setgid
+check=none|normal|strict
+   Jake kontroly ma delat jadro pri beho...check=none pravdepodobne
+   urychli operace
+debug
+   Prida haldy hlaseni
+errors=continue|remount-ro|panic
+   co ma delat, kdyz narazi nachybu-pokracovat, premountovat read-only,
+   nebo vyhlasit paniku
+resgid=gid,resuid=uid
+   Skupina/uzivetel , ktery muze pouzivat rezervovane misto
+sb=block
+   Pouzije jinou kopii superbloku. Treba v pripade, ze ten hlavni
+   je znicen.
+sync
+   Synchroni ubnovovani jako v BSD
+     - uklada synchrone vsechny inody apod..
+     - spatny vykon
+     - diry v uzivatelskych datech nemusi byt nalezeny pri fsck
+       protoze synchrone se ukladaji pouze tabulky..ne data..neni to
+       teda jako v dosu
+
+VNITRNI STRUKTURA FS
+====================
+
+Blocks, blocks groups atd...
+============================
+Aby ext2fs dosahl co mozna nejlepsiho vykonu rozhodli se autori
+drzet veskere tabulky co mozna nejblize datum. To zmensi
+pocet seekovani po disku a take zvysi bezpecnost-vypadne-li kus disku,
+smaze se jenom mala cast tabulek a tak zbourat opravdu cely disk
+je celkem fuska....
+Pro zopakovani...cely disk je rodelen do malych casti zvanych
+bloky, velkych 1024, 2048, nebo 4096 byte. To jsou alokacni
+jednotky. Kazdy blok muze byt free nebo alocated.
+Tyto bloky jsou rozdeleny do nekolika skupin a veskere informace
+o skupine jsou uvnitr. To umozni minimalni seekovani po disku-
+staci proste doject na zacatek skupiny a tam najit
+informace...je to jako kdybyste cely gigovy disk rozdelily
+do mnoha malych partition...ziskate tim take rychlejsi a optimalnejsi
+fs. Napriklad v dosu se zmensi fat(hlavne kdyz mate disky mensi nez 
+32MB) zmensi se vzdalenosti mezi jednotlivymi soubory apod...
+Proste ext2 se snazi na disk nahlizet jako na vice
+mensich disku...Take se snazi aby soubory byly pokud mozno
+cele v jedne skupine. Tim se omezuje fragmentace..
+
+Group descriptor
+===============
+Kazda skupina ma descriptor. Ta drzi ty nejdulezitejsi inofrmace o stavu
+skupiny..Takto vypada:
+
+struct ext2_group_desc
+{
+	__u32	bg_block_bitmap;		/* Blocks bitmap block */
+	__u32	bg_inode_bitmap;		/* Inodes bitmap block */
+	__u32	bg_inode_table;		/* Inodes table block */
+	__u16	bg_free_blocks_count;	/* Free blocks count */
+	__u16	bg_free_inodes_count;	/* Free inodes count */
+	__u16	bg_used_dirs_count;	/* Directories count */
+	__u16	bg_pad;
+	__u32	bg_reserved[3];
+};
+Vidite ze trochu pripomina superblock. Hlavne
+Promene free_blocks_count,free_inodes_count a used_dirs_count
+jsou statistiky o obsazeni inody. Algoritmus pro optimalni
+alokaci volneho mista tak napred rozhodne o kterou skupinu se bude 
+vlastne zajimat a potom tam vleze.
+bg_block_bitmap je ukazatel na blok, ktery obsahuje bitmapu
+ urcijici obsazeni bloku. Kazdy blok skupiny tam ma svuj bit, ktery
+ uzruje jestli je free/aclocated. Pocet nulovych bitu by mel sedet
+ s promenou free_blocks_count
+
+Jeste poznamka k bitmapam..jedna z optimalizaci jadra je, ze
+se snazi drzet vsechny bity v byte na stejne hodnote..tedy 0
+nebo ffh. To zmensuje fragmentaci
+
+Kazda skupina obsahuje colou tabolku block descriptoru v druhem
+bloku hned po superbloku. Kopie v bloku 0 je pouzita jadrem. Ostatni
+jsou zalohy, pro pripad poskozeni. Protoze kdyz se ztrati superblok je
+cely disk v....
+
+bg_inode_bitmap - to same ale pri inody
+bg_inode_table - urcuje, ktery blok obsahuje tabulku inod pro
+ tuto skopinu
+
+Inode a inode table
+===================
+Jak jsme si uz rekli v inody jsou skoro vsechno-soubory,adresare atd..
+Ext2fs je klasicky inodovy fs a proto prinasi omeze v poctu inod.
+Ten se urcuje pri vytvareni disku. Musi to byt jakysi kompromis,
+protoze vic inod spotrebuje vic disku na tabulky. Muze byt maximalne
+jedna inoda na 128 bytu ve fs...ext2fs dela bezne 1 inodu na 4KB...
+
+Inody jsou umisteny v tabulkach, ktere jak jsme si rekli, jsou
+rozhazene po disku-jedna na skupinu. Jadro se snazi umisitit
+data inody do bloku stejne skupiny, jako je inoda. Aby se nemuselo
+seekovat. Ne vzdycky se to povede. Takovym blokum se potom rika alieni..
+Takhle nejak to vypada na mym disku:
+
+GROUP 0:   592 used inodes
+13864 blocks required for all files, 7876 blocks used, 58 free
+7 files have 6572 blocks outside the group,
+133 files (1863 blocks) are located completely out of the group
+2447 alien blocks
+
+GROUP 1:   538 used inodes
+8579 blocks required for all files, 7934 blocks used, 0 free
+3 files have 6 blocks outside the group,
+168 files (648 blocks) are located completely out of the group
+9 alien blocks
+
+GROUP 2:   524 used inodes
+5851 blocks required for all files, 7914 blocks used, 20 free
+1 files have 25 blocks outside the group,
+34 files (681 blocks) are located completely out of the group
+2769 alien blocks
+
+GROUP 3:   538 used inodes
+209 blocks required for all files, 7934 blocks used, 0 free
+1 files have 7 blocks outside the group,
+0 files (0 blocks) are located completely out of the group
+7732 alien blocks
+
+Tady vidite,ze alieni nejsou tak zvlastni jev. Jsou zpusobeny dlouhymi
+soubory. Tady je format ulozeni inody:
+struct ext2_inode {
+	__u16	i_mode;		/* File mode */
+	__u16	i_uid;		/* Owner Uid */
+	__u32	i_size;		/* Size in bytes */
+	__u32	i_atime;	/* Access time */
+	__u32	i_ctime;	/* Creation time */
+	__u32	i_mtime;	/* Modification time */
+	__u32	i_dtime;	/* Deletion Time */
+	__u16	i_gid;		/* Group Id */
+	__u16	i_links_count;	/* Links count */
+	__u32	i_blocks;	/* Blocks count */
+	__u32	i_flags;	/* File flags */
+	union {
+		struct {
+			__u32  l_i_reserved1;
+		} linux1;
+		struct {
+			__u32  h_i_translator;
+		} hurd1;
+		struct {
+			__u32  m_i_reserved1;
+		} masix1;
+	} osd1;				/* OS dependent 1 */
+	__u32	i_block[EXT2_N_BLOCKS];/* Pointers to blocks */
+	__u32	i_version;	/* File version (for NFS) */
+	__u32	i_file_acl;	/* File ACL */
+	__u32	i_dir_acl;	/* Directory ACL */
+	__u32	i_faddr;	/* Fragment address */
+	union {
+		struct {
+			__u8	l_i_frag;	/* Fragment number */
+			__u8	l_i_fsize;	/* Fragment size */
+			__u16	i_pad1;
+			__u32	l_i_reserved2[2];
+		} linux2;
+		struct {
+			__u8	h_i_frag;	/* Fragment number */
+			__u8	h_i_fsize;	/* Fragment size */
+			__u16	h_i_mode_high;
+			__u16	h_i_uid_high;
+			__u16	h_i_gid_high;
+			__u32	h_i_author;
+		} hurd2;
+		struct {
+			__u8	m_i_frag;	/* Fragment number */
+			__u8	m_i_fsize;	/* Fragment size */
+			__u16	m_pad1;
+			__u32	m_i_reserved2[2];
+		} masix2;
+	} osd2;				/* OS dependent 2 */
+};
+
+Alokovani bloku
+===============
+
+Jedna ze zankladnich ukolu inody je zdruzovat bloky. Neni tu omezeni..kazdy
+blok muze byt alokovan kazdou inodou. (to jsou ale pak pekny croscainy :)
+Bloky se snazi alokovat ve stejne groupe a v tzv. seriich, aby se nemuselo
+moc seekovat.
+
+Kazdy asi vi, ze linuxovy disk je hejno malych souboru. Aby tyto soubory
+bezraly moc mista inoda ma u sebe chlivek na 12 bloku. Zvanych direct block
+Kdyz uz jadro ma inodu-jeden pristup na disk, protoze pozice hliavicky inody
+je pevne dana podle jejiho cisla ma uz prvnich 12 bloku(tedy 12 KB dat)
+A muze je penke cist. 
+
+Jsou tu ale i soubory, ktere jsou delsi. Proto blok 12 je indirect blok.
+To je blok obsahujici opet tabulku bloku. Tam se vejde
+1024/4 (na jednu adresu) 256 dalsich bloku. Takze soubory do 268KB jde
+cist pouze z 2 pristupy navic.
+
+Blok 13 je double indirect. To je blok ukazujici na blok, ktery ma ukazatele
+na bloky s direct adresama. Rozsah je tedy 256*256 tedy 65MB. Takove soubory
+lze tedy cist z 3+delka/256 pristypu na disk.
+
+Blok 13 je triple indirect. Ukazuje na double indirect bloky. Jeho rozsah
+uz predci velikost dnesnich disku.
+
+Takto vypada alogacni tabulka pro muj XF86_S3:
+
+INODE 36521
+File mode 104755 (regular file)
+Owner Uid 0 Group Id 0
+File size 2426620
+Access time      : Tue Apr 14 21:49:03 1981
+Creation time    : Fri Mar 24 12:38:15 1995
+Modification time: Thu Nov  2 03:22:17 1995
+Links count: 1
+512-Blocks count: 4762
+Version: 1
+Allocation:152153 152154 152155 152156 152157 152158 152159 152160 
+152161 152162 152163 152164 (indblock 152165)
+152166 152167 152168 152169 152170 152171 152172 152173 
+152174 152175 152176 152177 152178 152179 152180 152181 
+152182 152183 152184 152185 152186 152187 152188 152189 
+152190 152191 152192 152193 152194 152195 152196 152197 
+152198 152199 152200 152201 152202 152203 152204 152205 
+152206 152207 152208 152209 152210 152211 152212 152213 
+152214 152215 152216 152217 152218 152219 152220 152221 
+152222 152223 152224 152225 152226 152227 152228 152229 
+152230 152231 152232 152233 152234 152235 152236 152237 
+152238 152239 152240 152241 152242 152243 152244 152245 
+152246 152247 152248 152249 152250 152251 152252 152253 
+152254 152255 152256 152257 152258 152259 152260 152261 
+152262 152263 152264 152265 152266 152267 152268 152269 
+152270 152271 152272 152273 152274 152275 152276 152277 
+152278 152279 152280 152281 152282 152283 152284 152285 
+152286 152287 152288 152289 152290 152291 152292 152293 
+152294 152295 152296 152297 152298 152299 152300 152301 
+152302 152303 152304 152305 152306 152307 152308 152309 
+152310 152311 152312 152313 152314 152315 152316 152317 
+152318 152319 152320 152321 152322 152323 152324 152325 
+152326 152327 152328 152329 152330 152331 152332 152333 
+152334 152335 152336 152337 152338 152339 152340 152341 
+152342 152343 152344 152345 152346 152347 152348 152349 
+152350 152351 152352 152353 152354 152355 152356 152357 
+152358 152359 152360 152361 152362 152363 152364 152365 
+152366 152367 152368 152369 152370 152371 152372 152373 
+152374 152375 152376 152377 152378 152379 152380 152381 
+152382 152383 152384 152385 152386 152387 152388 152389 
+152390 152391 152392 152393 152394 152395 152396 152397 
+152398 152399 152400 152401 152402 152403 152404 152405 
+152406 152407 152408 152409 152410 152411 152412 152413 
+152414 152415 152416 152417 152418 152419 152420 152421 
+(dindblock 152422)
+(indblock 152423)
+152424 152425 152426 152427 152428 152429 152430 152431 
+152432 152433 152434 152435 152436 152437 152438 152439 
+152440 152441 152442 152443 152444 152445 152446 152447 
+152448 152449 152450 152451 152452 152453 152454 152455 
+152456 152457 152458 152459 152460 152461 152462 152463 
+152464 152465 152466 152467 152468 152469 152470 152471 
+152472 152473 152474 152475 152476 152477 152478 152479 
+152480 152481 152482 152483 152484 152485 152486 152487 
+152488 152489 152490 152491 152492 152493 152494 152495 
+152496 152497 152498 152499 152500 152501 152502 152503 
+152504 152505 152506 152507 152508 152509 152510 152511 
+152512 152513 152514 152515 152516 152517 152518 152519 
+152520 152521 152522 152523 152524 152525 152526 152527 
+152528 152529 152530 152531 152532 152533 152534 152535 
+152536 152537 152538 152539 152540 152541 152542 152543 
+152544 152545 152546 152547 152548 152549 152550 152551 
+152552 152553 152554 152555 152556 152557 152558 152559 
+152560 152561 152562 152563 152564 152565 152566 152567 
+152568 152569 152570 152571 152572 152573 152574 152575 
+152576 152577 152578 152579 152580 152581 152582 152583 
+152584 152585 152586 152587 152588 152589 152590 152591 
+152592 152593 152594 152595 152596 152597 152598 152599 
+152600 152601 152602 152603 152604 152605 152606 152607 
+152608 152609 152610 152611 152612 152613 152614 152615 
+152616 152617 152618 152619 152620 152621 152622 152623 
+152624 152625 152626 152627 152628 152629 152630 152631 
+152632 152633 152634 152635 152636 152637 152638 152639 
+152640 152641 152642 152643 152644 152645 152646 152647 
+152648 152649 152650 152651 152652 152653 152654 152655 
+152656 152657 152658 152659 152660 152661 152662 152663 
+152664 152665 152666 152667 152668 152669 152670 152671 
+152672 152673 152674 152675 152676 152677 152678 152679 
+(indblock 152680)
+A tak dale....furt pryc :) pokracujeme ukazatelema na indirect bloky...
+
+i_mode
+======
+
+Urcuje typ inody a permisions. Vypisuje se jako osmickove cislo. a ma
+6 mist. Kde je rozdelena na 4 vpravo a 2 vlevo. Urcuje jestli inoda je adresar,
+soubor nebo kdovi co jeste.
+
+4 vpraco
+   posledni 3 byty jsou zname pristupy rwxrwxrwx. To zpracovava jadro
+   Bit 9 urcuje jestli soubor je VTX. Ale stejne nevim co to znamena..
+   Bit 10 rike ze soubor ma nastaveny group flag. Take nevim proc..
+     snad pro optimalizaci rozlozeni na disku
+   Bit 11 nastavuje set user id. To je znamy flag, ktery umozni procesu
+     orepnout si effective usera na root.
+2 vlevo
+   01 - soubor je FIFO
+   02 - znakove zarizeni
+   04 - je adresar
+   06 - blokove zarizeni
+   10 - normalni soubor
+   12 - symbolic link
+   14 - socket
+
+Casy a datumy
+   i_ctime - kdy byla inoda naposled alokovana(kdy byl soubor vytvoren)
+   i_mtime - kdy byla inoda naposled pozmenena
+   i_ntime - kde se na ni naposled pristupovalo
+   i_dtime - kdy byla inoda dealokovana(soubor smazan)
+
+i_size
+   delka. Pokud je to normalni soubor odpovida delce souboru v bytech,
+   ale pri jinych typech muze znamenat cokoliv :)
+i_uid
+i_gid
+   vlastnici souboru
+
+Hard linky
+==========
+Jak jsmem jiz rikal, hardlinky se delaji tak, ze proste dve adresarove polozky
+ukazuji na jedenu inodu. Pokud je ale adresarova polozka smazana, fs musi vedet,
+jestli byla posledni a jestli ma dealokovat inodu. To urcuje i_links_count.
+pokud je promena 1 znamena ze na ni ukazuje jedna adresarova polozka.
+Pokud je 0 bude soubor smazan.
+
+Extended flags
+==============
+Ty jsou ulozeny ve specialni 32bitove promene i_flags. Zatim jenom 7
+bitu je definovano a 5 pouzito ve verzi 0.5a. Hlavne undelete a compress
+chybi..ale vyvojari se chvastaji ze tam pribyde ve verzi 1.3...ale moc tomu
+neverim, vzhledem k tomu ze vyvoj 1.3 se chyli ke konci a furt nic..Jsou
+tu sice compress i undelete patche ale hlavne compress zatim za moc nestoji.
+Pouziva beznou gzip kompresi a seekovani po disku znamena pokazde rozbalovat
+od zacatku. To rozhodne neni reseni :) Asi se do toho pustim sam :)))
+
+bit 0 - Secure deletion
+  Pokud tohle nastavite souboru a pak ho smazete uz nikdo ho neobnovi, protoze
+  data jsou peclive prepsana nulama.
+bit 1 - Undelete
+  zatim nepouzito
+bit 2 - Compress file
+  nepouzito...
+bit 3 - Synchroni updata
+  Vsechno se bude synchrone updatit na disku jako kdyz date sync
+  optionu pri mountovani
+bit 4 - Immutable file
+  nedotknutelny soubor..nejde smazat,prepsat proste nic
+bit 5 - Append only
+  nemuzete prepsat ale muzete pridat data..
+bit 6 - Do not dump file
+  Tenhle bit by mel pouzivat dump pro linux ale nevim...asi ma funkci
+  neco jako archive bit v dosu. Proste 100% unused :)
+
+Symbolicke linky
+================
+Uz jsem rikal ze to jsou male soubory co obsahuji cestu k jinemu souboru,
+ktery se otevre misto neho.
+Ext2 se snazi omezit velikost symbolic linku a ma dva typy:
+
+Fast symbolic link
+
+Uklada cestu hned v inodu(i_block[0]-i_block[15]) to znamena, ze cesty do
+delky 15*4=65 znaku nezabiraji blok.
+
+Slow symbolic link
+
+Kdyz se tam nevejde je to proste format normalniho souboru a cesta je ulozena
+ve specialnim bloku.
+
+i_version
+=========
+Pouziva nfs
+
+Nevyuzite veci
+==============
+Jsou tu promene spojene z ACL, ktere jeste neni implementovano.
+Take je tam vsechno pripraveno na fragmenty-ty umoznujou blok rozdelit
+na nekolik casti a do kazde hodit jiny soubor- stejne jako stacker
+
+Take os depended promene nejsou vyuzity.
+
+Specialni inody
+===============
+ 1 - bad blocks - inoda alokuje vsechny vadne bloky disku
+ 2 - root inode - root adresar
+ 3 - acl index - nepodporovano
+ 4 - acl data - nepodporovano
+ 5 - boot loader inode - nevim nevim...
+ 6 - undelete directory inode - neimplementovano
+ 7-10 - rezervovano pro budoucnost
+
+Adresare
+========
+
+Jsou na disku ulozeny ve stejnem formatu jako soubory. Maji specialni format-
+nekolik directory entries za sebou
+
+struct ext2_dir_entry {
+	__u32	inode;			/* Inode number */
+	__u16	rec_len;		/* Directory entry length */
+	__u16	name_len;		/* Name length */
+	char	name[EXT2_NAME_LEN];	/* File name */
+};
+
+Ext2 podoruje nazvy do 256 znaku a uklada je podobne jako pascal. Nema tedy
+na konci nulu.
+
+Promena rec_len ukazuji delku celeho rekordu, protoze neni ulozena plna
+struktura ale jenom vyuzita delka zaokrouhlena nahoru na delitelnost
+4. Posledni entry v bloku nema rec_ken vyplnene.
+
+Promena inode ukazuje na inodu souboru.
+Mazani se provadi tak, ze se k predchozi entry prida rec_len smazane polozky.
+Tim vam adresare muzou ale celkem pekne kynout :) da se to odstranit
+jednoduchym figlem: cp -r adresar1 adresat2
+rm -r adresar1
+mv adresar2 adresar1
+
+Superblok
+=========
+Ten se nachazi na offestu 1024. Jeho delka je take 1024. A je take okopirovan
+na zacatek kazde skupiny bloku.
+Obsahuje nekolik typu inofrmaci
+  1) zakladni informace o strukture fs - vyplneno pri vytvoreni
+  2) tunable parameters - ty se daji vzdycky menit...a jsou celkem sikovne
+     vysvetlim je
+  3) Informace a stavu fs-volna mista a spol
+
+definice:
+struct ext2_super_block {
+	__u32	s_inodes_count;		/* Inodes count */
+	__u32	s_blocks_count;		/* Blocks count */
+	__u32	s_r_blocks_count;	/* Reserved blocks count */
+	__u32	s_free_blocks_count;	/* Free blocks count */
+	__u32	s_free_inodes_count;	/* Free inodes count */
+	__u32	s_first_data_block;	/* First Data Block */
+	__u32	s_log_block_size;	/* Block size */
+	__s32	s_log_frag_size;	/* Fragment size */
+	__u32	s_blocks_per_group;	/* # Blocks per group */
+	__u32	s_frags_per_group;	/* # Fragments per group */
+	__u32	s_inodes_per_group;	/* # Inodes per group */
+	__u32	s_mtime;		/* Mount time */
+	__u32	s_wtime;		/* Write time */
+	__u16	s_mnt_count;		/* Mount count */
+	__s16	s_max_mnt_count;	/* Maximal mount count */
+	__u16	s_magic;		/* Magic signature */
+	__u16	s_state;		/* File system state */
+	__u16	s_errors;		/* Behaviour when detecting errors */
+	__u16	s_pad;
+	__u32	s_lastcheck;		/* time of last check */
+	__u32	s_checkinterval;	/* max. time between checks */
+	__u32	s_creator_os;		/* OS */
+	__u32	s_rev_level;		/* Revision level */
+	__u16	s_def_resuid;		/* Default uid for reserved blocks */
+	__u16	s_def_resgid;		/* Default gid for reserved blocks */
+	__u32	s_reserved[235];	/* Padding to the end of the block */
+};
+
+Identifikace
+============
+Aby se filesystem poznal ma v superbloku magicke cislo: 0xEF53, kde EF znamena
+extended filesystem. Ve filesystemech do 0.2GB je magicke cilo 0xEF51.
+Tyto fs uz nejsou kompatibilni z aktualni verzi. Hlavne group descriptory
+se lisi. Nevim jestli je jeste nekdo pouziva. Je ho mel pekne dlouho na
+starem disku a obcas to cinilo potize.
+
+Inofrmace o strukture fs
+========================
+a_block_size
+   velikost bloku (1024*mocnina 2)
+a_inodes_count
+   pocet vsech inod(maximalni pocet souboru na disku)
+a_first_data_block
+   Urcuje blok na devici,kde je superblock. On je sice czdycky na
+   offsetu 1024 ale na divici to muze byt jine. Treba knuz block
+   je 1024 je to upravdu block 1 ale kdyz block size je 4096
+   je to porad jeste block 0.
+   Block size na devici se nemusi shodovat s block size pouzitym
+   filesystemem
+a_blocks_per_group
+   Jak jsou velke groupy
+a_inodes_per_group
+   Jak jsou velke inody. Melo by to byt celkovy pocet inod/poctem
+   group
+a_creator_os
+   0=linux :)
+   1=Hurd
+   2=Masix
+a_rev_level
+   obsahuje major verzi fs. Je zatim 0 protoze se fs nedobelhal k 
+   verzi 1.(posledni je tusim 0.5B_
+a_log_frag_suze
+a_frags_per_group
+   zatim nejsou podporovany a tak odpovidaji velikosti bloku
+
+Error handling v Ext2fs
+=======================
+
+Postupuje takto:
+ 1) identifikace problemu provadi kernel(nastavovani dirty flagu atd)
+ 2) opravovani provadi externi utilitka e2fsck a nebo rucne
+    ruznymi editory
+
+s_state
+  urcuje stav filesystemu. Kernel tim predava ruzne flagy pro fsck
+  a ostatni utility
+
+  bit 0
+    pokud je na 0 urcuje, ze fs neni radne odmountovan
+    a zpusobi znamou hlasku po resetu filesystem is not clean
+    a nastartuje fsck
+  bit 1
+    je nastaven na 1 pokud jadro narazi na nejaky problem
+
+s_errors
+  urcuje, jak se ma jadro chovat pri nalezeni chyby.
+  1 = ignore
+  2 = remount read-only
+  3 = vyhlasi paniku
+
+  Standartne se chyba ignoruje
+
+Pridavne parametry
+
+pro fsck:
+s_max_mnt_count
+  nastavi po kolika mountech se provede fsck. Ja osobne toto cislo
+  vzdycky zvysim, pretoze nesnasim situaci, kdyz po rebootu se mi objevi
+  max_mount_count reeached runing fsck....
+s_checkinterval
+  nastavuji cas s sekundach mezi vyvolanim fsck...
+  hodnota 0 casovane kontrolovani vypne.
+s_lastcheck
+  kdy byl naposled provaden fsck...pro s_checkinterval
+
+Omezeni zaplneni disku:
+
+s_r_block_count
+  urcuje poced diskovych bloku, ketre jsou reservovane pro roota.
+  Ostatni uzivatele do nich nemuzou. Ja osobne tuto hodnuotu nuluju,
+  protoze nenavadim hlasku filesystem is 110% full :)
+s_def_resuid
+s_def_resgid
+  urcuje uzivatele a skupinu, ktera muze tyto bloky take vyuzit.
+
+Stav fs:
+s_free_block_count 
+  pocet volnych bloku
+s_free_inodes_count 
+  pocet volnych inod
+ s_mtime
+  Cas, kdy byl naposled primountovan
+s_wtime
+  Cas, kdy byl naposled zmenen.
+
+PROGRAMY PRO PRACI S FS
+=======================
+
+Programy v baliku e2fsprogs
+===========================
+e2fsck
+======
+  Slouzi k automaticke oprave fs. Bezne se provadi pouze v pripade,
+  ze fs neni clean nebo ma nastaveny chybovy bit. Startuje se take,
+  kdyz s_max_mnt_count ho vyvola.
+  Test se provadi v nekolika castech:
+
+  Pass 1: Checking inodes, blocks, and sizes
+     kontroluje inode
+     kontroluje jestli sedi velikost a pocet zabranych bloku
+     kontroluje jestli nejsou bloky sdileny ruznymi inodami
+     udela tabulky do pameti pro dalsi testy
+
+     pruchod 1B-D se vola pouze v pripade problemu
+     pracuje se datovymi ploky sdilenymi ruznymi inodami
+     dealokuje soubory nebo sdilene inody kopiruje
+  Pass 2: Checking directory structure
+     kontrolujestly polozky jsou v poradku
+     jestli cisla inod jsou vporadku
+     kontroluje . a ..
+  Pass 3: Checking directory connectivity
+     premistuje neprilinkovane inody do lost+found
+     likviduje hardlinky na adresare
+  Pass 4: Checking reference counts
+     kontroluje a opravuje link_count
+     premistuje neprilinkovane inody do lost+found
+  Pass 5: Checking group summary information
+     kontroluje bitmapy
+     calkove inofrmace o fs
+
+  Zakladni switche
+     -f vyvola kontrolu i kdyz je flag nastaven na clean
+     -n pracuje rad-only. Jenom vypisu chyby
+     -y opravi vse
+     -p automaticka oprava...je volano pri bootovani.
+
+mke2fs
+======
+Vytvareni filesystemu na disku. Zakladni optiony:
+-b [velikost]    nastavi velikost bloku
+-c               kontroluje cely disk a oznaci vadne sektory
+-i [pocet]       kolik bytu pripadne na jednu inodu. Jinymi slovy
+                 nejmensi velikost souboru, kterymi muzete zaplnit cely
+                 disk. Standartne je 4096. Musi byt vetsi nez 1024
+-l [soubor]      nace seznam spatnych bloku ze souboru. Hodi se pri foramtovani
+                 disket a tak.
+-m [procenta]    kolik procent disku je pri superusera. Pokud date nulu
+                 bude vam df zobrazovat opravdu volne misto na disku
+-q               bud zticha!
+-v               rvi!
+-S               Ulozi jenom superbloky a group descriptory.
+                 hodi se to, kdyz jsou superbloky rozpadle..mate pak sanci
+                 jeste neco z disku ziskat :)
+                 proste kdyz se uz disk vubec nehlasi k tomu ze je ext2
+                 muzete takhle obnovit zakladni tabulky a potom pomoci ext2fs
+                 to nejak opravit...ale je to opravdu nebezpecne :)
+tune2fs
+=======
+Tento program slouzi k nastaveni tunable parametru disku. Pouzivejte ho puze na
+read-only nebo nemountovany filesystem, jinak se muzou dit zvlastni veci.
+Disk namountujete rad-only tak, ze linux nastartujete do singleusera tim
+ze v lilu predate perametr S
+Switche:
+-c [pocet]       maximalni pocet pro primountovani nez se pusti fsck...
+-e [neco]        co delat pri chybe:
+                   continue,ignore,panic
+-g [skupina]     Nastavi skupinu ktera vedle roota muze pouzivat
+                   rezervovane bloky
+-i interval[d|m|w] Slouzi k nastaveni casu mezi startovanim fsck
+-l               Vypise aktualni nastaveni:
+                    tune2fs 1.01, 30-Oct-95 for EXT2 FS 0.5a, 95/03/19
+                    Filesystem magic number:  0xEF53
+                    Filesystem state:         not clean
+                    Errors behavior:          Continue
+                    Inode count:              125488
+                    Block count:              501760
+                    Reserved block count:     25088
+                    Free blocks:              16051
+                    Free inodes:              92168
+                    First block:              1
+                    Block size:               1024
+                    Fragment size:            1024
+                    Blocks per group:         8192
+                    Fragments per group:      8192
+                    Inodes per group:         2024
+                    Last mount time:          Sun Apr 14 18:12:33 1996
+                    Last write time:          Sun Apr 14 18:09:46 1996
+                    Mount count:              1
+                    Maximum mount count:      20
+                    Last checked:             Sun Apr 14 18:12:30 1996
+                    Check interval:           0
+                    Reserved blocks uid:      0 (user root)
+                    Reserved blocks gid:      0 (group root)
+-m [procenta]     Kolik procent bloku rezervovat pro roota
+-r [pocet]        Kolik bloku rezervovat pro roota
+-u user           Ktery uzivatel muze take pouzivat rezervovane misto.
+
+debugfs
+=======
+Pozor toto neni utilitka jenom k kontrolovani filesystem driveru.
+Slouzi hlavne k prohlidnuti filesystemu a rucnimu opravovani. Take
+je dobry na delani poskozenych filesystemu a potom testovani
+jadra a e2fsck :) Je to program, ktery umoznuje delat mnoho zakladnich
+oprtaci s fs, jako zakladani inod, cteni inod, cteni souboru,adresaru 
+atd. Je to proste neco jako diskeditor. Pro uplnost manualova stranka:
+
+DEBUGFS(8)                                             DEBUGFS(8)
+
+NAME
+       debugfs - ext2 file system debugger
+
+SYNOPSIS
+       debugfs [ [ -w ] device ]
+
+DESCRIPTION
+       debugfs is a file system debugger. It can be used to exam-
+       ine and change the state of an ext2 file system.
+       device is the special file  corresponding  to  the  device
+       containing the ext2 file system (e.g /dev/hdXX).
+
+OPTIONS
+       -w     Specify  that  the  file  system  should be open in
+              read-write mode. Without this option, the file sys-
+              tem is open in read-only mode.
+
+COMMANDS
+       debugfs  is an interactive debugger. It understands a num-
+       ber of commands.
+
+       cat <file>
+              Dump the contents of an inode to stdout.
+
+       cd <directory>
+              Change the current working directory  to  specified
+              directory
+
+       chroot <directory>
+              Change  the  root  directory  to  be  the specified
+              inode.
+
+       close  Close the currently open file system.
+
+       clri <file>
+              Clear the contents of the  inode  corresponding  to
+              file
+
+       dump <file> <out_file>
+              Dump the contents of an inode to a file.
+
+       expand_dir <file>
+              Expand a directory.
+
+DEBUGFS(8)                                             DEBUGFS(8)
+
+NAME
+       debugfs - ext2 file system debugger
+
+SYNOPSIS
+       debugfs [ [ -w ] device ]
+
+DESCRIPTION
+       debugfs is a file system debugger. It can be used to exam-
+       ine and change the state of an ext2 file system.
+       device is the special file  corresponding  to  the  device
+       containing the ext2 file system (e.g /dev/hdXX).
+
+OPTIONS
+       -w     Specify  that  the  file  system  should be open in
+              read-write mode. Without this option, the file sys-
+              tem is open in read-only mode.
+
+COMMANDS
+       debugfs  is an interactive debugger. It understands a num-
+       ber of commands.
+
+       cat <file>
+              Dump the contents of an inode to stdout.
+
+       cd <directory>
+              Change the current working directory  to  specified
+              directory
+
+       chroot <directory>
+              Change  the  root  directory  to  be  the specified
+              inode.
+
+       close  Close the currently open file system.
+
+       clri <file>
+              Clear the contents of the  inode  corresponding  to
+              file
+
+       dump <file> <out_file>
+              Dump the contents of an inode to a file.
+
+       expand_dir <file>
+              Expand a directory.
+
+       find_free_block [goal]
+              Find  the  first free block, starting from goal and
+              allocates it.
+
+       find_free_inode [dir [mode]]
+              Find a free inode and allocates it.
+
+       freeb <block>
+              Mark the block as not allocated.
+
+Version 1.01               October 1995                         1
+
+DEBUGFS(8)                                             DEBUGFS(8)
+
+       freei <file>
+              Free the inode corresponding to file
+
+       help   Print a list of commands understood by  debugfs(8).
+
+       icheck <block>
+              Do block->inode translation.
+
+       iname <inode>
+              Print  the  file  name corresponding to inode (cur-
+              rently not implemented - see ncheck).
+
+       initialize <device> <blocksize>
+              Create an ext2 file system on device
+
+       kill_file <file>
+              Remove a file and deallocates its blocks.
+
+       ln <source_file> <dest_file>
+              Create a link.
+
+       ls [pathname]
+              Emulate the ls(1) command.
+
+       modify_inode <file>
+              Modify the contents of the inode  corresponding  to
+              file
+
+       mkdir <file>
+              Make a directory.
+
+       mknod <file> [p|[[c|b] <major> <minor>]]
+              Create a special device file
+       ncheck <inode>
+              Do inode->name translation.
+
+       open [-w] <device>
+              Open a file system.
+
+       pwd    Print the current working directory.
+
+       quit   Quit debugfs
+
+       rm <file>
+              Remove a file.
+
+       rmdir <directory>
+              Remove a directory.
+
+       setb <block>
+              Mark the block as allocated.
+
+Version 1.01               October 1995                         2
+
+DEBUGFS(8)                                             DEBUGFS(8)
+
+       seti <file>
+              Mark in use the inode corresponding to file
+
+       show_super_stats
+              List the contents of the super block.
+
+       stat <file>
+              Dump  the  contents  of  the inode corresponding to
+              file
+
+       testb <block>
+              Test if the block is marked as allocated.
+
+       testi <file>
+              Test if the inode correponding to file is marked as
+              allocated.
+
+       unlink <file>
+              Remove a link.
+
+       write source_file <file>
+              Create  a  file  in  the filesystem named file, and
+              copy the contents of source_file into the  destina-
+       rm <file>
+              Remove a file.
+
+       rmdir <directory>
+              Remove a directory.
+
+       setb <block>
+              Mark the block as allocated.
+
+Version 1.01               October 1995                         2
+
+DEBUGFS(8)                                             DEBUGFS(8)
+
+       seti <file>
+              Mark in use the inode corresponding to file
+
+       show_super_stats
+              List the contents of the super block.
+
+       stat <file>
+              Dump  the  contents  of  the inode corresponding to
+              file
+
+       testb <block>
+              Test if the block is marked as allocated.
+
+       testi <file>
+              Test if the inode correponding to file is marked as
+              allocated.
+
+       unlink <file>
+              Remove a link.
+
+       write source_file <file>
+              Create  a  file  in  the filesystem named file, and
+              copy the contents of source_file into the  destina-
+              tion file.
+
+AUTHOR
+       debugfs was written by Theodore Ts'o <tytso@mit.edu>.
+
+SEE ALSO
+       dumpe2fs(8), e2fsck(8), mke2fs(8)
+
+Version 1.01               October 1995                         3
+
+myslim ze tady neni co dodat. Kdo nerozumi temto popisum, at se raci
+do fs nehrabe :)
+
+Dump2fs
+=======
+Vypisuje informace o fs:
+
+Filesystem magic number:  0xEF53
+Filesystem state:         not clean
+Errors behavior:          Continue
+Inode count:              125488
+Block count:              501760
+Reserved block count:     25088
+Free blocks:              16150
+Free inodes:              92169
+First block:              1
+Block size:               1024
+Fragment size:            1024
+Blocks per group:         8192
+Fragments per group:      8192
+Inodes per group:         2024
+Last mount time:          Sun Apr 14 18:12:33 1996
+Last write time:          Sun Apr 14 18:07:31 1996
+Mount count:              1
+Maximum mount count:      20
+Last checked:             Sun Apr 14 18:12:30 1996
+Check interval:           0
+Reserved blocks uid:      0 (user root)
+Reserved blocks gid:      0 (group root)
+
+
+Group 0:
+  Block bitmap at 4, Inode bitmap at 5, Inode table at 6
+  0 free blocks, 1429 free inodes, 47 directories
+  Free blocks: 
+  Free inodes: 595-624, 626-2024
+Group 1:
+  Block bitmap at 8196, Inode bitmap at 8197, Inode table at 8198
+  0 free blocks, 1484 free inodes, 42 directories
+  Free blocks: 
+  Free inodes: 2551-2555, 2570-4048
+Group 2:
+  Block bitmap at 16388, Inode bitmap at 16389, Inode table at 16390
+  4 free blocks, 1480 free inodes, 51 directories
+  Free blocks: 22887-22890
+  Free inodes: 4430, 4435, 4438, 4445, 4534, 4546, 4548, 4600-6072
+Group 3:
+  Block bitmap at 24580, Inode bitmap at 24581, Inode table at 24582
+  0 free blocks, 1481 free inodes, 4 directories
+  Free blocks: 
+  Free inodes: 6616-8096
+Group 4:
+  Block bitmap at 32772, Inode bitmap at 32773, Inode table at 32774
+  1 free blocks, 1450 free inodes, 28 directories
+  Free blocks: 35044
+  Free inodes: 8411, 8413-8415, 8419-8420, 8457, 8470-8471, 8638-8639, 8642-9250, 9259-9260, 9269, 9276, 9295-10120
+Group 5:
+  Block bitmap at 40964, Inode bitmap at 40965, Inode table at 40966
+  61 free blocks, 1479 free inodes, 31 directories
+  Free blocks: 46729-46770, 46879-46895, 46914-46915
+  Free inodes: 10666-12144
+A tak dale...
+
+lsattr,chattr
+=============
+Umoznuje vypisovat/nastavovat specialni atributy pro ext2fs...
+
+mklost+found
+============
+Vytvori lost+found adresar
+
+Programy distribuovane jednotlive
+=================================
+
+ext2ed
+======
+Je prijemnejsi fulscreen alternativa k debugu...Umi vpodstate to same
+a ma lepsi uzivatelsk interdace :)
+
+lde
+===
+Linux disk editor. Tvrdi o sobe ze je norton disk edit like ale neni.
+Umi ext2 minix a mozna i dalsi. Podporuje editovani urcite inody,
+hexadumpat a modufikovat primo bloky a pospojovani bloku do 
+inody=rucni undelete. Ja preferuju e2fsed
+
+Dump
+====
+Je tu i dump/restore utilita, ktera umi ulozit e2fs disk a pak
+ho zrestaurovat do 100% stejne podoby...stejne atributy atd..
+Tar napriklad nepodporuje rozsirene atributy.
+
+Defrag
+======
+Existuje i defragmentacni program. Funguje pekne ale nema valny ucinek.
+vola se pomoci e2defrag. Zakladni optiony:
+ -r jenom ukazat, co by se delo...ale neprovadet. Celkem hezky :)
+ -n Bezi bez zobrazovani...
+Je nutne volat na odmountovani disk. Proto si musite vetsinou vzit slakwari
+bootovacku, hodit ho tam a nabootovat z diskety.
+
+Ve stejnem baliku najdete i pekny programecek e2dump. Z neho je vetsina vypisu
+co jsem pouzil.
+
+Ext2tools
+=========
+To je sada utilit pro cteni linux disku z dosu..celkem cool :)
+Existuje i fs driver pro os/2. Nevim jak se jmenuje
+
+
+
+Vyvoj novych utilitek
+=====================
+  Je silne zjednodusen tim, ze existuje knihovna dodavana spolu se e2fsprogs
+  pro praci se zakladnimi datovymi strukturamy
+
+
+benchmarky
+==========
+
+Uvadim zde benchamrky ze slajdu k ext2fs. Provadene na i486DX/33 16MB 
+ram. 
+
+Benchmark no 1:
+
+            Char     Block     Rewrite   Char   Block  Seeks
+	    Write    Write               Read   Read
+	    MB/Sec   KB/Sec    MB/Sec    MB/Sec KB/Sec /Sec
+BSD FFS        505      768       206     436     600    25.4
+Ext 2 FS       523      611       323     303     805    46.0
+Minix FS       404      541       315     361     837    47.3
+Xia FS         459      478       241     290     278    31.3
+
+Ext2 fs je jednoznacne rychlejsi nez minix/Xia. Pouze u cteni je minix o neco
+malo rychlejsi ale to bude spis aktualni fragmentaci disku.
+U FFS je to trochu sporne. Blokove pristupy jsou nekolikanasobne lepsi.
+Zato pristupy po znacich jdou pomalu. Z hlediska jadra to ale neni rozdil.
+Stejne od stdia to dostava bufferovane po blocich. Problem bude tedy v pouzitych
+knihovnach. Vzhledem k dobe, kdy benchmarky byly provadeny to uz asi neplati.
+FFS je take rychlejsi pri blokovem zapisu. Zapis ale neni tak kriticky, protoze
+se provadi asynchrone a cachi. Nejdulezitejsi je read!
+
+Benchmark no. 2:
+Pozor! zde je uveden cas. Nizsi hodnoty jsou lepsi!
+             Create    Copy     Stat    Grep    Compile
+	      (ms)     (ms)     (ms)    (ms)     (ms)
+BSD FFS      2296      5919      3482   15607   76333
+Ext2 FS       450      4330      7104   10057   65382
+Minix FS      536      4665      7209   11524   71038
+Xia FS        492      4398      7241   10953   60430
+
+Ext2fs byl porazen je compile a to Xiafs...
+Tady ale mohlo hrat roli neco uplne jineho :)
+A take xiafs se velmi brzo sfragmentuje a pak uz neni tak rychle :)
+Take je rychlejsi Stat u BSD FS ale to take bude spis knihovnami nebo
+necim podobnym....
+
+Fragmentace
+===========
+Proc fragmentace neni tak velky problem:
+1) sekvencni cteni dlouhych souboru vetsinou neni casove kritick
+2) Dlouhe soubory se vetsinou pouzivaji jako random-acess
+
+Benchmarky:
+
+Bootovani z root partiitony
+       %full pred             po                   cena fragmentace
+             defragmentaci    defragmentaci
+extfs  95%   37 sec           26 sec               42%
+ext2fs 99%   40 sec           37 sec               8%
+
+Nacteni linux zdrojaku
+ext2fs 95%   53 sec	      41 sec		   29%
+
+Tady vidite, ze pri bezne praci-random pristupu to neni kriticke.
+Jenom pri sekvencnim ctenim-cteni linux zdrojaku se to projevuje.
+
+ZAKLADNI NAVRH A SROVNANI Z JINYMI FS
+=====================================
+
+Optimalizace
+============
+(toto je kratky vycuc ze slajdu)
+
+Co vlastne optimalizujeme:
+Bandwidth: maximalni rychlost disku
+Latency: Rychla odpoved na I/O requesty
+Efectivita: Setrit CPU
+Reliabolity: Aby nam to nepadalo
+Load: Aby to bezelo rychle pri cteni z vice procesu
+
+Buffer cache
+============
+  1) Unified buffer cache
+     Kdyz je to mozne poziva buffer cache a proces, ktery data nacetl stejne 
+     misto v pameti. Napriklad vsechny spustene programy jsou zaroven v cachi.
+
+     Efektivita pri vetsich cachich
+
+     Cache muze rust a zmensovat se posle volneho mista
+  2) I/O scheluding
+     Zapisy jsou asynchroni...
+     Cteni je syncroni a tak casove kriticke
+     Priority pro I/O
+     Srovnavani requesty pro nejlepsi pruchodnost
+I/O Ordering (Read-Ahead)
+=========================
+   Read ahead nacita data dopredu ze souboru, protoze predpoklada ze si o to
+   proces rekne. Read ahead muze bezet asyncrone(v linuxu to je zrovna ve 
+   vyvoji) A potom proces, ktery pomalu nacita data z disku a nejak je 
+   je zpracovava vubec nemusi cekat na disk. Jak to resi os:
+   1) BSD FFS
+     -nacita jeden blok dopredu
+     -pracuje dobre pokud nebezi vic procesu...
+   2) Viva FS: Dela si statistiky a podle toho readaheadi
+   3) Linux Ext2fs
+    - pri seqencnim ctenim
+    Zrovna se to dost meni v novych jadrech a tak radeji pomlcim...ve starsich
+    jadrech to za moc nestoji.
+
+Alokace volneho mista na disku
+==============================
+To je velmi dulezita vec. Da se tim omezit fragmentace disku.
+Jak to resi jednotlive systemy:
+  BSD FFS
+    1) vyuziva znalost psychicke struktury disku. To ale pomalu prestava platit,
+    protoze disky jsou nyni tak slozite a inteligntni, ze casto vodi pocitac
+    za nos.
+    2) Stejne jako Ext2 rozdeluje disk na cylinder groupy
+    3) Intelignetni alkace adresaru a inod
+      Adresare se delaji ve groupe z nejvetsim volnym mistem ze vsech
+      Inody se vytvareji ve stejnych skupinach jako jejich adresare
+       pokud to je mozne
+      Prvni blok soubory ve stejne groupe.
+      Dalsi blok se snazi alokovat podle fyzickeho rozdeleni disku-dalsi cluster
+      
+      Minimalizuje efekt velkych souboru. Donuti soubor preskocit
+      do nove groupy pri kazdem indirect bloku. Tim nemuze jeden soubor
+      zaplnit celou groupu
+
+   Viva FS
+     To je filesystem zalozeny na BSD FS. Ma oddelene bitmapy pro
+     jednotlive volne bloky a clusteru po 2 4 a 8 blocich.
+
+     Alokuje bloky sekvencne za sebou, protoze nove disky jsou pro to 
+     optimalizovane-maji hardwarovy read-ahead
+
+     pri alokaci kouka na single blok pri prvnim, a potom 2,4,8-tim se snazi
+     docilit, aby kratke soubory zraly single bloky,zatimco dlouhe se usidlovaly
+     nefragmentovane ve clusterech
+
+     Pokud dalsi blok neni volny, snazi se napred najit dalsi blok v nejblizsich
+     32 blocich, teprve potom pouzije bitmapy
+
+
+   Ext2fs
+     Kombinuje pouziti BSDckovych group s Viva style sdruzovanim volnych bloku
+     do clusteru.
+
+     Pouziva groupy k tomu, aby inode hlavicky a jejich data byly blizko sebe.
+     Take se snazi davat k sobe spojene inody-z jednoho adresare do jednoho
+     mista.
+
+     Stejne jako viva pouziva napred prohleda nasledujicich 32 bytu
+
+     Pokud to selze hleda dopredu
+        libovolny cely volny byte(8 bloku) v bitmape skupiny
+	libovolny volny bit ve skupine
+	pokracuje nasledujici skupinou
+     Predalokovava az 8 bloku dopredu a predpoklada ze soubor tam doroste
+     Pokud najde volny byte nezacne od bbitu 0 ale koukne se na predchazejici
+       byte a zacne od neho...pokud tam nejake misto je
+     Snazi se nepouzivat velke colne celky pro male soubory
+     Nedela zadne pridavne bitmapy(2 4 8 blokove) jako viva..
+
+A toto je vysledek:
+
+Inode: 58824, frag: 4, file size 5752, (Average frag size: 1, dist: 1 blocks)
+Inode: 58835, frag: 4, file size 5621, (Average frag size: 1, dist: 1 blocks)
+Inode: 58837, frag: 4, file size 5231, (Average frag size: 1, dist: 1 blocks)
+Inode: 58838, frag: 3, file size 9820, (Average frag size: 3, dist: 6 blocks)
+Inode: 58839, frag: 3, file size 6164, (Average frag size: 2, dist: 4 blocks)
+Inode: 58840, frag: 3, file size 10224, (Average frag size: 3, dist: 7 blocks)
+Inode: 58841, frag: 3, file size 4164, (Average frag size: 1, dist: 1 blocks)
+Inode: 58842, frag: 3, file size 6384, (Average frag size: 2, dist: 3 blocks)
+Inode: 58843, frag: 5, file size 23112, (Average frag size: 4, dist: 17 blocks)
+Inode: 58844, frag: 3, file size 6668, (Average frag size: 2, dist: 4 blocks)
+Inode: 58845, frag: 2, file size 1676, (Average frag size: 1, dist: 234052 blocks)
+Inode: 58846, frag: 3, file size 6904, (Average frag size: 2, dist: 5 blocks)
+Inode: 58847, frag: 4, file size 4096, Fragmented directory!
+Inode: 59015, frag: 3, file size 4244, (Average frag size: 1, dist: 2 blocks)
+Inode: 59044, frag: 3, file size 3072, Fragmented directory!
+Inode: 59113, frag: 4, file size 6769, (Average frag size: 1, dist: 1 blocks)
+Inode: 59114, frag: 3, file size 9652, (Average frag size: 3, dist: 5 blocks)
+Inode: 59116, frag: 7, file size 11290, (Average frag size: 1, dist: 3 blocks)
+Inode: 59117, frag: 3, file size 13888, (Average frag size: 4, dist: 8 blocks)
+Inode: 59118, frag: 10, file size 22535, (Average frag size: 2, dist: 7 blocks)
+Inode: 59119, frag: 3, file size 4476, (Average frag size: 1, dist: 3 blocks)
+Inode: 59120, frag: 6, file size 7093, (Average frag size: 1, dist: 1 blocks)
+Inode: 59121, frag: 3, file size 5528, (Average frag size: 2, dist: 3 blocks)
+Inode: 59122, frag: 12, file size 29239, (Average frag size: 2, dist: 13 blocks)
+Inode: 59123, frag: 3, file size 4824, (Average frag size: 1, dist: 3 blocks)
+Inode: 59124, frag: 13, file size 30297, (Average frag size: 2, dist: 334 blocks)
+Inode: 59125, frag: 4, file size 11612, (Average frag size: 3, dist: 6 blocks)
+Inode: 59126, frag: 13, file size 37677, (Average frag size: 2, dist: 13 blocks)
+Inode: 59127, frag: 3, file size 4288, (Average frag size: 1, dist: 1 blocks)
+Inode: 59128, frag: 4, file size 6854, (Average frag size: 1, dist: 1 blocks)
+Inode: 59129, frag: 3, file size 7772, (Average frag size: 2, dist: 5 blocks)
+Inode: 59130, frag: 6, file size 12230, (Average frag size: 2, dist: 3 blocks)
+Inode: 59131, frag: 3, file size 15208, (Average frag size: 5, dist: 8 blocks)
+Inode: 59132, frag: 3, file size 7608, (Average frag size: 2, dist: 6 blocks)
+Inode: 59133, frag: 3, file size 9496, (Average frag size: 3, dist: 5 blocks)
+Inode: 59134, frag: 14, file size 40709, (Average frag size: 2, dist: 15 blocks)
+Inode: 59135, frag: 3, file size 13248, (Average frag size: 4, dist: 7 blocks)
+Inode: 59136, frag: 3, file size 3544, (Average frag size: 1, dist: 2 blocks)
+Inode: 59137, frag: 3, file size 6992, (Average frag size: 2, dist: 5 blocks)
+Inode: 59138, frag: 11, file size 32397, (Average frag size: 2, dist: 12 blocks)
+Inode: 59139, frag: 3, file size 2192, (Average frag size: 1, dist: 236140 blocks)
+Inode: 59140, frag: 6, file size 16119, (Average frag size: 2, dist: 4 blocks)
+Inode: 59141, frag: 3, file size 4340, (Average frag size: 1, dist: 2 blocks)
+Inode: 59142, frag: 6, file size 17854, (Average frag size: 3, dist: 5 blocks)
+Inode: 59143, frag: 3, file size 4188, (Average frag size: 1, dist: 1 blocks)
+Inode: 59144, frag: 6, file size 17738, (Average frag size: 3, dist: 5 blocks)
+Inode: 59145, frag: 3, file size 2616, (Average frag size: 1, dist: 236214 blocks)
+Inode: 59146, frag: 6, file size 16645, (Average frag size: 2, dist: 4 blocks)
+Inode: 59147, frag: 3, file size 3092, (Average frag size: 1, dist: 236236 blocks)
+Inode: 59148, frag: 6, file size 16887, (Average frag size: 2, dist: 5 blocks)
+Inode: 59149, frag: 3, file size 3240, (Average frag size: 1, dist: 236258 blocks)
+Inode: 59150, frag: 4, file size 8139, (Average frag size: 2, dist: 2 blocks)
+Inode: 59151, frag: 3, file size 8856, (Average frag size: 3, dist: 5 blocks)
+Inode: 59152, frag: 9, file size 25111, (Average frag size: 2, dist: 11 blocks)
+Inode: 59153, frag: 2, file size 2764, (Average frag size: 1, dist: 236297 blocks)
+Inode: 59154, frag: 6, file size 10599, (Average frag size: 1, dist: 2 blocks)
+Inode: 59155, frag: 3, file size 14336, (Average frag size: 4, dist: 8 blocks)
+Inode: 59156, frag: 10, file size 30511, (Average frag size: 3, dist: 14 blocks)
+Inode: 59157, frag: 3, file size 7784, (Average frag size: 2, dist: 4 blocks)
+Inode: 59158, frag: 6, file size 17246, (Average frag size: 2, dist: 5 blocks)
+Inode: 59159, frag: 3, file size 2160, (Average frag size: 1, dist: 236387 blocks)
+Inode: 59160, frag: 6, file size 9717, (Average frag size: 1, dist: 2 blocks)
+Inode: 59161, frag: 3, file size 3320, (Average frag size: 1, dist: 236401 blocks)
+Inode: 59162, frag: 6, file size 13869, (Average frag size: 2, dist: 3 blocks)
+Inode: 59163, frag: 3, file size 9336, (Average frag size: 3, dist: 5 blocks)
+Inode: 59164, frag: 3, file size 3440, (Average frag size: 1, dist: 2 blocks)
+Inode: 59165, frag: 3, file size 2156, (Average frag size: 1, dist: 236435 blocks)
+Inode: 59166, frag: 3, file size 2724, (Average frag size: 1, dist: 236437 blocks)
+Inode: 59168, frag: 10, file size 27051, (Average frag size: 2, dist: 13 blocks)
+Inode: 59169, frag: 3, file size 6888, (Average frag size: 2, dist: 4 blocks)
+Inode: 59170, frag: 6, file size 19012, (Average frag size: 3, dist: 6 blocks)
+Inode: 59171, frag: 3, file size 5708, (Average frag size: 2, dist: 3 blocks)
+Inode: 59172, frag: 6, file size 19274, (Average frag size: 3, dist: 6 blocks)
+Inode: 59173, frag: 3, file size 11904, (Average frag size: 4, dist: 7 blocks)
+Inode: 59174, frag: 2, file size 5040, (Average frag size: 2, dist: 3 blocks)
+Inode: 59175, frag: 9, file size 27556, (Average frag size: 3, dist: 13 blocks)
+Inode: 59176, frag: 3, file size 6388, (Average frag size: 2, dist: 3 blocks)
+Inode: 59177, frag: 6, file size 18746, (Average frag size: 3, dist: 5 blocks)
+Inode: 59178, frag: 3, file size 9876, (Average frag size: 3, dist: 7 blocks)
+Inode: 59179, frag: 9, file size 22861, (Average frag size: 2, dist: 10 blocks)
+Inode: 59180, frag: 4, file size 12820, (Average frag size: 3, dist: 8 blocks)
+Inode: 59181, frag: 15, file size 49981, (Average frag size: 3, dist: 15 blocks)
+Inode: 59182, frag: 3, file size 17884, (Average frag size: 6, dist: 11 blocks)
+Inode: 59183, frag: 11, file size 37571, (Average frag size: 3, dist: 15 blocks)
+Inode: 59184, frag: 6, file size 26948, (Average frag size: 4, dist: 15 blocks)
+Inode: 59185, frag: 3, file size 4272, (Average frag size: 1, dist: 3 blocks)
+Inode: 59186, frag: 11, file size 52046, (Average frag size: 4, dist: 19 blocks)
+Inode: 59187, frag: 3, file size 4880, (Average frag size: 1, dist: 3 blocks)
+Inode: 59189, frag: 9, file size 21312, (Average frag size: 2, dist: 10 blocks)
+Inode: 59190, frag: 3, file size 4628, (Average frag size: 1, dist: 1 blocks)
+Inode: 59191, frag: 6, file size 14468, (Average frag size: 2, dist: 4 blocks)
+Inode: 59192, frag: 3, file size 7000, (Average frag size: 2, dist: 3 blocks)
+Inode: 59193, frag: 9, file size 19498, (Average frag size: 2, dist: 9 blocks)
+Inode: 59194, frag: 3, file size 3808, (Average frag size: 1, dist: 2 blocks)
+Inode: 59195, frag: 6, file size 17043, (Average frag size: 2, dist: 5 blocks)
+Inode: 59196, frag: 3, file size 6592, (Average frag size: 2, dist: 3 blocks)
+Inode: 59197, frag: 8, file size 19582, (Average frag size: 2, dist: 7 blocks)
+Inode: 59198, frag: 3, file size 7352, (Average frag size: 2, dist: 3 blocks)
+Inode: 59199, frag: 8, file size 19854, (Average frag size: 2, dist: 7 blocks)
+Inode: 59200, frag: 3, file size 3880, (Average frag size: 1, dist: 1 blocks)
+Inode: 59201, frag: 6, file size 14437, (Average frag size: 2, dist: 4 blocks)
+Inode: 59202, frag: 4, file size 10044, (Average frag size: 2, dist: 5 blocks)
+Inode: 59203, frag: 9, file size 25907, (Average frag size: 2, dist: 11 blocks)
+Inode: 59205, frag: 3, file size 7820, (Average frag size: 2, dist: 4 blocks)
+Inode: 59206, frag: 3, file size 12196, (Average frag size: 4, dist: 7 blocks)
+Inode: 59209, frag: 8, file size 20393, (Average frag size: 2, dist: 5 blocks)
+Vidite, ze vzdalenost jednotlivych fragmentu souboru je dost mala(vetsinou
+pod tech 32 bloku) jenom obcas ji preleze. Potom to ale je opravdu velky skok..
+
+A tady pridavam bitmapu jedne groupy meho disky
+Group 15 block bitmap:
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FE FF FF FF EF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+01 F0 FF FF FF FF FF FF FF FF 03 FE FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF 07 FC FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF 7F 00 00 00 FC FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FB FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF 01 00 00 FF FF 0F 00 00 00 00 00 FC 07 00 
+00 C0 FF FF 03 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 FF 01 80 FF FF 01 00 00 00 00 
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 C0 03 00 00 00 00 00 00 00 00 00 E0 FF FF FF 
+FF FF FF 81 FF FF FF F0 FF FF FF FF FF FF 07 00 
+FE FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF CF FF FF FF FF FF 7F 00 F0 FF FF 
+FF 1F 80 FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF 07 00 00 00 00 00 00 00 
+00 00 FC FF 03 00 00 00 00 C3 FF FF FF FF FF FF 
+FF FF 1E F8 1F FE 3F 00 00 00 00 00 FF FF FF FF 
+FF FF 7F 00 00 C0 03 00 E0 FF FF 0F 00 00 00 00 
+00 00 00 00 00 00 00 FE FF FF FF FF FF FF FF FF 
+FF FF FF 00 00 00 3C FC 00 00 C0 CF FF FF FF FF 
+03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00 00 F0 0F 00 00 00 00 00 00 02 FC 01 
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 C0 FF 9F FF FF 1F 00 00 00 00 E0 FF FF FF FF 
+FF FF FF FF FF 3F 00 00 DE FF FF FF FF FF FF FF 
+FF FF FF 7F 00 00 00 00 00 00 00 00 C0 FF FF 1F 
+00 F0 FF FF FF 01 00 00 00 FF FF FF FF FF FF FF 
+FF FF FF 03 00 00 00 00 00 FE FF FF FF FF FF 07 
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 FF FF FF 07 00 00 00 00 00 00 00 00 00 
+C0 FF 03 00 F8 FF FF FF FF FF FF FF FF FF 3F 7F 
+00 F8 FF FF FF FF FF FF FF FF FF FF FF FF FF F3 
+FF FF FF FF FF FF FF 1F F8 1F 80 01 FF FF FF FF 
+FF FF FF FF FF FF FF 7F 00 00 00 00 F8 03 00 00 
+00 00 00 00 FF 01 00 00 FE 01 00 F0 FF FF FF 01 
+Tady je videt, jak se jadro snazi je drzet na ff nebo 00. Dalo mi
+opravdu praci najit groupu, kde se objevuji i jina cisla....
+
+Mapa ukazujici rozlozeni dat na mem disku:
+
+GIDDDDDDDDXXDDDD--D-----------DDXDXXXDDDDXDXDD>>DDDDGI->DX>XD>D>>>>->->-------
+------------------>DD>D>XXGII-->>---->->DDDD>>DDDDDD>>>DDXDDD>-DDX-XX---------
+GII>-----------<X-------D--------<---------X>>DDD>DDGII>>DDD>XDDDDXDDDXDDXXDD>
+>>>-->XX-XXXX-X-----------GII>>>>>>>DD>>>>>>>>>>>>>>>>>>>>DXXXXXD>DD>>D>>DDDDX
+-GID>>>>>>>D>->>>>-->>>->>>>>>>>>>>>>>>>>>>>>>>>>>>>>GI>>X>>X>>>>>XXDX>>X>>>>>
+-XX>X>>>>>>>->>X>DXD-<<>---GII--X>>>>>DD>>>X>-D--X-XD<---<-----<-X-X--X-XXX>D>
+>GII>>>>X>>>>>>>>>>>>>>>>>>>>>X----------------------GII>>>DDXX--<---X>>>DDDDD
+DDDXDDXXDD>>>-----X>->X    GIID------->>>-------->-------DXDDDD>XXDXXXDDD>>DDD
+DXGI>>>>>->>>D>>>>>>>>DDDDD>DD>XXD>>DDDDXXXXXX>>>>>>>>GID>-->>>>-->------>>->>
+X--------------------->--XX-GII>D>>>DD>XXXXDD>--DX>-D>>>D>XX------------------
+--GIID>>DDX>>XXX->>>>>->>>>->>>X>>XXXXXXXXX>XXXXXX>XXXGII>>---DD>>>>>D>>>--->-
+----DXDXX>>XXXXXXXXX>>XX>X>XXGID>>>>>>>>>>>>>>>>>>>>D><X>XXXXXX>>X >X>>>>>>>>>
+>>>GI>--------->>>->>>>>>>->>X>>>>-------------->DX>><DGII>>>>>>DD->>>XXXXX>>X
+XX>XXX->>>>----->-->-->XD>>->GII>X>-->-->->->-->->-->>>X-><D>X>>X>>>>---->>>>>
+>>>GII--->--->>>--->->>->>->----->->>>->->->DX>>---->X>GII>D>>D>D>D>>>>>>>>>>>
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>GIX->>>>>-->>>>>>>>>>>>>>---X------------>------
+->>>GI>>>>---->--->>>>>>>->>>>>>>>>->DX>>>>>--XDDX>X->-DGII>>D>>DDD>DX-XD>>>>-
+>->>XX<X>-<>-->>>>>->XX->>>X<-GII>>>>DD>XDDD>->X->->>>>>>>X>->>X>>->>XDDDDDDXX
+----GII>>XDD>>>>>>>>>>>->>>>>>>>>>>>>>>>>>>>>>>>>>>>     GIDD             >>>>
+DDDDDXXDD>DD>>D>XXXX--X>-XX-<  GID---->--->>>>->>>>>>>>DDDDD>>---DDD>XXXXXXXXX
+XDD  GID>>>D----------->DDD>>>->-XDXXXXDDD>>DXDD         GII>>->>>>>>>D>DD>->D
+D>DDDDX>XXXXXXXXD>D>           GII--DD>D>>--->>D>DD>>>>>D-----DDDDXDXXXX-DXDDD
+DX>D>GII>D---X-------------->-->D>>>----------------------GIDD>>>>DD>>>>>X>>>>
+>>>>>DDDDD>>>>>>>>>>>>>>>>>>>>--GI>DDDD>-DD>DXD>DDDD--DXXDDXDXXXXD>XXX>-------
+-DDDDDGII-XXXXXX--XX--XDD---D>>>>>DDDDDDDDXX>DXDD>>DDDD>D>GIIDD>>>>-D>>>-->DDD
+>>>>>>->>------>>DDXXXXXXXDDDD>>GII>>>DXD>>>>>>>>>>>DDDDD>>D>DD>>>>>>D>>>>>D>>
+>>>>>DGIID-->->XD>>>>->>>>>DD>>>DDDDDDDDDDD>>D>>DD>>DDD>>>>GI>>D>>>>>D>D>--->>
+>>--->>---XDXD>DDXD>>D<XD>>>>>>>>GI>>>>>>>>>>>>>>>>>>>>D>DDD>>DDDDD>D>D>X---X-
+----->-GII>>>>>>>>>>>>>>>>>>>D>>X>>DDD>DD->D-------X---->-XGII->-->>>>--------
+----------------->------->------>GIID>>->----------->>--->-------->>>>->>>>-X-
+>>->->-XGI>>DD-DDDDDDDXD---DDD>----------X---X>XXX>>>>>>->>-GID>DDD>DDXXX>>-D>
+XX->>->>>>XX>>>->>>>>---->-->DD>--GII>>X>>>>>>>>>>>>>>>>>>-->>>>>>>>>>>>>>>>>>
+>>>>>>>>GII>XX>>>>>>>>>>>>>>>>>->>>>>>>>>>>>>>>>>>>>>>>>>>>>GII>>DX>>D>>D>D>>>
+>>>D>DD>DDDDX>XXXDX>XD>-XX>X>>><>XGII>->>>>>>>>->>D---D>>>->>>>DDXXDDDXDXD>DDX
+>->--XXD-GI>DD>D>>>><---DXXX<-->XXXX XX>DXX>>>>>>---XX>X>>>>-GI>>>>>>DDXD>>>>>
+>>>>>>->>>>>>DXDDD>>DXD>---D-X-----GII>>DX>>D>D>>>>>>>D-->->--DDDDDDD>>--DD>>>
+>>>-<--->GIID>>>>>>>>DDDD----------DDDXXXXX---D>>>>>>------->GII>>>>>>>>>D>>>>
+>>>>>>>>>>>>>>>>>>>>>--->>>--------SGI->--->>>>->->--->>->-->>DDDDXXDDXXXX>XXX
+XXXXXDD>--GIDD>---DDXDDD>---------------------->DXXXXDX>X>  XXGIDDDDDDD>>>>>>>
+>>>>>>X>>>---->--->X---<X>X>->X-----GII>>>>>>>>>>D>>D>DDDD>D>DDDD>XDXXXXX-----
+------XXXXGII>>D>>>DDX--->>--X-X-DDDXDXDD>>>>--->>>>>-><>>>>>>GIIDDDDDDD>X-
+
+G - zacatek group - tabulka
+I - inode tabulka
+D - adresar
+> - zacatek souboru
+< - konec souboru
+- - prostredek souboru
+X - tady je soubor fragmentovan. Fragment je na obou stranach. Jedna dira
+    v souboru tedy zousobi dve X
+M - bitmapa
+S - superblock
+B - spatny blok
+K - kernel
+
+mezera-volne misto
+Jeden znak na obrazovce je 157 bloku. Proto zobrazeni je skreslene, protoze
+jsem daval prednost adresarum pred normalnimy soubory a zacatkum souboru
+pred koncem, je tu hodne adresaru a zacatku soboru, presto ze na disku to je
+trochu jinak. Ale rozhodne je fragmentace mnohem min misto zabrane adresari..
+jsou tu i dost dlouhe sobory bez fragmentace a volne misto je relativne
+nefragmentovane na konci groupingu. To je na tak strasne pouzivanem
+disku rozhodne uspech (podle stastik je fragmentace neco kolem 6%). 
+Pro lepsi predstavu jeste kousek disku odzoomovane:
+
+------<>-----<>---------------------------------------------------------------
+----------------------------------------------------------<>------------------
+---------------------------<>------------------------------<>-----------------
+--------------------------------<>-<>--------------------------<>-----<>------
+-----------------------------<>--<>--<XD>-----------------------------<>------
+---------------------------<>------------------------------<>-----------------
+-------------<>-------------------------<>-----------------------------<>-----
+------------------------<>-----------------------------<D>>>>>>>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>>>>X-X>----------X---------------------------------------------
+--------------X--------------<XD>---<><>--------------------------------------
+-<>--------------------<><>---------------------------------<>----------------
+------------<>-<>-------<><>----------<>--<>-------------------<>-<>>---------
+--------------------------<>-----------------<DDD>--------<>------------------
+--<><>D>>>--------<><>---------------------<><>--------<><>----<><D>----<><>--
+------<D>>--<>----<D>>---------------------<><><>----------------<><>--<>>--<>
+----<>-------------------<>--<>---<>--<>--------------------------------------
+<>---------<>-------<>---<>----<>-----<>----------<>-----<>------<>------<>--<
+>----<>-----------------------------------<SG MMIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
+IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
+IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
+IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIDD>>>>>-XD>
+----------------<><><-<X><>>><><>>-<>X>>>X>X------------------XDDD>-----------
+--------<>-<><>-<><><>--<><><><><><><><>-<>-------<><><>-<><><><><><><>><><>-<
+>-<><><>-<><><>-<>--<>-<>--<>--<>-<>-<>--<>--<>----<>---<>-----<>-------------
+---------------------------------------------------------------<>----<>------<
+>--------------------------------<>----------<>----------------------------<>-
+----<>-----<>----------------<>-----------------<>----------------------<><><<
+>X><><>DD>>----------------<D><>--<-<>X>--<------<><>X>---------<----X>---<---
+----------------X-<>--X>------------------------<XDD------------X>------------
+--<--X>--------------X--------------X>-------------<X----<--------X-----X>----
+---------<----------------------X>---------------X>---------------------------
+-----------<-------X>------<-<>---X>-----<-<>----X>------<----<X>----<------<-
+-----XD---X>--<X><>------------------<>------------------<>----------------<>-
+---<>------<>----<>------<>----<>------<>----<>-----<>------------------<>><><
+>>><>------------------<>---<----X>-----<>>-----<>----<>------<>----<>-----<>>
+<>>>>>>>>>>><>><>><><><><><><><><>>>>>><>>><>><>>><>><>>----<>------<>----<>--
+---<>>>>--<>>------<>---XD>>--<>---------<-<X>-<----X>--------<>-<><><>-<>----
+----X>XX>----------X-XX<>-XXX--------X---XX-<XX>----------X---XX<XXXXX--------
+X----XX--<---<>XX>-X<<D>--<X>------------------<---<><><>--X>><-<>--<>-X>----X
+>---<----X>---<-----X>----<----X>---<XX----X-------XD>-<---------------------X
+------XD>-------<>-------------------X>><-----<-X><----------X><>-----<----
+Efektivita pro cpu
+==================
+ 1) Rozdeluje bitmapy do skupin
+ 2) Kazda skupina ma svoje vlastni statistiky. Urci tedy napred o kterou
+    skupinu se bude zajiman a potom teprve prohlizi bitmapy
+ 3) Prealokace dopredu usetri 75% casu stravenym prohledavanim tabulek
+ 4) Rychle podporuje sekvencni alokace(kouka tam jako prvni)
+
+A takto nejak vypada group descriptor:
+GROUP 56
+Blocks bitmap location:458756
+Inodes bitmap location:458757
+Inodes table location:458758
+Free blocks in the group:600
+Free inodes in the group:1483
+Directories count:34
+GROUP 57
+Blocks bitmap location:466948
+Inodes bitmap location:466949
+Inodes table location:466950
+Free blocks in the group:61
+Free inodes in the group:1757
+Directories count:25
+GROUP 58
+Blocks bitmap location:475140
+Inodes bitmap location:475141
+Inodes table location:475142
+Free blocks in the group:0
+Free inodes in the group:1463
+Directories count:26
+GROUP 59
+Blocks bitmap location:483332
+Inodes bitmap location:483333
+Inodes table location:483334
+Free blocks in the group:13
+Free inodes in the group:1398
+Directories count:27
+GROUP 60
+Blocks bitmap location:491524
+Inodes bitmap location:491525
+Inodes table location:491526
+Free blocks in the group:97
+Free inodes in the group:1505
+Directories count:35
+GROUP 61
+Blocks bitmap location:499716
+Inodes bitmap location:499717
+Inodes table location:499718
+Free blocks in the group:246
+Free inodes in the group:1697
+Directories count:23
+
+Efektiva vyuziti mista na disku
+===============================
+ 1) Pouziva fast symbolic links, ktere usetri 1KB mista
+ 2) Diky vysoke efektivite na CPU je mozne pouzivat male 1KB bloky
+
+
+Spolehlivost
+============
+  BSD
+  1) Synchroni ukladani dulezitych dat-inod,adresaru atd..
+     To samozdrejme HODNE spomaluje a drzi vporadku jen tabulky-ne data
+  2) Ma lost+found pro stracene ploky
+  3) Superblok je opkovan v kazde skupine
+
+  Viva FS
+  1) Srovnava poradi ukladani na disk tak, aby tabulky byly konzistentni
+  2) Peclive update bitmapu z pameti na disk
+  3) Hlida inody aby sdilely bloky
+  4) Indirect bloky delaji potize v serazenem updateni
+
+  E2fs
+  1) Hlavni opravovani bylo svereno utilitce e2fsck...jadro jenom
+     naznaci, ze je neco spatne
+  2) Adresarove polozky maji vetsi prioritu pri ukladani
+  3) Ma dirty flag,ktery urcuje jestli byl fs correctly unmounted
+     Ma error flag,ktery urcuje jestli byla jadrem detekovana chyba
+  4) Superblok a descriptory skupin jsou na zacatku kazde skupiny
+  5) Bitmapy a inode tabulky muzou byt v jakemkoliv bloku skupiny.
+     Muzou byt tedy spatne sektory
+  6) Jednou zacas uklada inody i souborum, ktere jsou dlouhou dobu
+     otevrene a proto by se normalne neupdatly
+  
+
+
+O cem se uvazuje
+================
+  utilitky:
+  Dosacky utility pro cteni e2souboru. Ext2tools nejsou z puvodni dilny
+  a tak je autori neuznavaji
+
+  dump/restore pro e2fs...tusim, ze je uz ve vyvoji
+
+  Utilitky pro cteni na jinych unixech
+
+  Novy bootloader, ktery projde adresarovou strukturu a bootuje 
+  libovolny soubor.
+
+  Zmeny do fs:
+
+  Vse je pripraveno pro undelete,acl - moznost nastaveni
+  prav zvlast pro kazdeho usera, komprese - je tu nekolik
+  packagesu - hpfs a e2compress. Planuji brzke spojeni a pripojeni
+  do jadra. Chteji:
+     1) Automatickou kompresi na write
+     2) Automatickou dekompresi
+     3) Snadne pridavani novych pakovacich metod
+     4) konfigurovatelnost
+     5) flexibilitu
+  Fast files
+  Soubory mensi nez 60 bytu(pry kolem 5% na linux disku) budou
+  ulozeny hned v tabulce..
+
+
+A tim jsem uz asi tema naprosto vycerpal :)
+Doufam....

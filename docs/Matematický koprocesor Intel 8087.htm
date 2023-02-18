@@ -1,0 +1,1216 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!-- saved from url=(0045)http://www.guh.cz/~valeon/texty/8087/8087.htm -->
+<HTML><HEAD><TITLE>Matematický koprocesor Intel 8087</TITLE>
+<META content="text/html; charset=windows-1250" http-equiv=Content-Type>
+<META 
+content="Popis matematického koprocesoru 8087 (a vyšších) včetně všech jeho instrukcí" 
+name=description <META>
+<META content="MSHTML 5.00.2314.1000" name=GENERATOR></HEAD>
+<BODY aLink=darkmagenta bgColor=white link=blue text=black vLink=blue>&nbsp; 
+<P>
+<H1 align=center>Matematický &nbsp; koprocesor &nbsp; Intel &nbsp; 8087</H1>
+<P> 
+<P align=justify>je téměř samostatně pracující jednotkou pro matematické operace 
+v pohyblivé řádové čárce. U procesorů 8086/8088, 80186/80188, 80286 a 80386 se 
+jednalo o samostatnou jednotku, která však byla od 80486 integrována přímo do 
+procesoru. Její programové ovládání však zůstalo stejné kvůli zachování zpětné 
+kompatibility, takže principy zde popsané fungují i u těchto nových typů. 
+<P> <BR><B>Obsah:</B> 
+<UL>
+  <LI><A href="http://www.guh.cz/~valeon/texty/8087/8087.htm#Typy">Typy dat 
+  používané v matematickém koprocesoru</A> 
+  <UL>
+    <LI><A href="http://www.guh.cz/~valeon/texty/8087/8087.htm#TypyDat">Typy 
+    dat</A> 
+    <LI><A href="http://www.guh.cz/~valeon/texty/8087/8087.htm#Symboly">Výhradní 
+    symboly</A> </LI></UL>
+  <P></P>
+  <LI><A href="http://www.guh.cz/~valeon/texty/8087/8087.htm#Vyjimky">Výjimky 
+  koprocesoru</A> 
+  <P></P>
+  <LI><A href="http://www.guh.cz/~valeon/texty/8087/8087.htm#Registry">Registry 
+  koprocesoru</A> 
+  <UL>
+    <LI><A href="http://www.guh.cz/~valeon/texty/8087/8087.htm#DataReg">Datové 
+    registry</A> 
+    <LI><A href="http://www.guh.cz/~valeon/texty/8087/8087.htm#CWR">Řídící 
+    registr</A> 
+    <LI><A href="http://www.guh.cz/~valeon/texty/8087/8087.htm#Stav">Stavový 
+    registr</A> </LI></UL>
+  <P></P>
+  <LI><A 
+  href="http://www.guh.cz/~valeon/texty/8087/8087.htm#Instrukce">Instrukční 
+  repertoár a komunikace koprocesoru s procesorem</A> 
+  <UL>
+    <LI><A 
+    href="http://www.guh.cz/~valeon/texty/8087/8087.htm#Komunikace">Komunikace 
+    koprocesoru s procesorem</A> 
+    <LI><A 
+    href="http://www.guh.cz/~valeon/texty/8087/8087.htm#InstrukceSeznam">Seznam 
+    instrukcí</A> </LI></UL></LI></UL>
+<P> <BR><A name=#Typy>
+<H2>Typy dat používané v matematickém koprocesoru</H2>
+<P><A name=#TypyDat>
+<TABLE border=1>
+  <TBODY>
+  <TR>
+    <TD><B>&nbsp;Název &nbsp;formátu&nbsp;</B> 
+    <TD><B>&nbsp;Označení &nbsp;v&nbsp;Pascalu&nbsp;</B> 
+    <TD><B>&nbsp;Počet &nbsp;slabik&nbsp;</B> 
+    <TD><B>&nbsp;Přibližný &nbsp;rozsah&nbsp;</B> 
+    <TD><B>&nbsp;Grafické znázornění&nbsp;</B> </TD>
+  <TR>
+    <TD>&nbsp;Slovo integer 
+    <TD>&nbsp;Integer 
+    <TD align=middle>&nbsp;2 
+    <TD>&nbsp;-32 768 až 32 767 
+    <TD><BR>&nbsp;<IMG 
+      src="Matematický koprocesor Intel 8087_files/int16.gif"> </TD>
+  <TR>
+    <TD>&nbsp;Krátký integer 
+    <TD>&nbsp;Longint 
+    <TD align=middle>&nbsp;4 
+    <TD>&nbsp;-2 * 10<SUP>&nbsp;9</SUP> až 2 * 10<SUP>&nbsp;9</SUP> 
+    <TD><BR>&nbsp;<IMG 
+      src="Matematický koprocesor Intel 8087_files/int32.gif"> </TD>
+  <TR>
+    <TD>&nbsp;Dlouhý integer 
+    <TD>&nbsp;Comp 
+    <TD align=middle>&nbsp;8 
+    <TD>&nbsp;-9.2 * 10<SUP>&nbsp;18</SUP> až 9.2 * 10<SUP>&nbsp;18</SUP> 
+    <TD><BR>&nbsp;<IMG 
+      src="Matematický koprocesor Intel 8087_files/int64.gif"> </TD>
+  <TR>
+    <TD>&nbsp;BCD&nbsp;zhuštěný&nbsp; 
+    <TD>
+      <HR align=center width="80%" height="1">
+
+    <TD align=middle>&nbsp;10 
+    <TD>&nbsp;-10<SUP>&nbsp;18</SUP>+1 až 10<SUP>&nbsp;18</SUP>-1 
+    <TD><BR>&nbsp;<IMG 
+      src="Matematický koprocesor Intel 8087_files/bcd.gif">&nbsp; </TD>
+  <TR>
+    <TD>&nbsp;Krátký real 
+    <TD>&nbsp;Single 
+    <TD align=middle>&nbsp;4 
+    <TD>&nbsp;±10<SUP>&nbsp;-38</SUP> až ±3 * 10<SUP>&nbsp;38</SUP> 
+    <TD><BR>&nbsp;<IMG 
+      src="Matematický koprocesor Intel 8087_files/single.gif"> </TD>
+  <TR>
+    <TD>&nbsp;Dlouhý real 
+    <TD>&nbsp;Double 
+    <TD align=middle>&nbsp;8 
+    <TD>&nbsp;±10<SUP>&nbsp;-308</SUP> až ±10<SUP>&nbsp;308</SUP> 
+    <TD><BR>&nbsp;<IMG 
+      src="Matematický koprocesor Intel 8087_files/double.gif"> </TD>
+  <TR>
+    <TD>&nbsp;Pomocný real 
+    <TD>&nbsp;Extended 
+    <TD align=middle>&nbsp;10 
+    <TD>&nbsp;±10<SUP>&nbsp;-4932</SUP> až ±10<SUP>&nbsp;4932</SUP> 
+    <TD><BR>&nbsp;<IMG 
+      src="Matematický koprocesor Intel 8087_files/extended.gif"> 
+</TD></TR></TBODY></TABLE>
+<P align=justify>Koprocesor interně ukládá a zpracovává pouze 80bitová reálná 
+čísla. Ostatní tvary jsou použity jen na vstupu a výstupu z&nbsp;koprocesoru a 
+ten je interně převádí do a z&nbsp;80bitových reálných čísel. <BR>Objekt, ve 
+kterém je uloženo reálné číslo, je rozdělen na tři části. Nejvyšší bit, na 
+obrázku označený písmenem <B>S</B>, je znaménkový bit. Je-li nulový, je číslo 
+uložené v&nbsp;objektu kladné. Část označená <B>Exponent</B> nese informaci o 
+velikosti čísla a <B>Mantisa</B> uchovává číslice čísla. <BR>Do mantisy jsou 
+ukládány významné binární číslice. Neukládají se nevýznamné levostranné nuly. 
+Aby se šířka mantisy využila co nejvíce, ukládá se v&nbsp;<B>normalizovaném 
+tvaru</B>, tj. první významná číslice je umístěna v&nbsp;nejvyšším bitu. 
+Z&nbsp;takto definovaného pravidla vyplývá, že v&nbsp;nejvyšším bitu musí být 
+vždy jednička vyjma případu, kdy je v&nbsp;objektu uloženo číslo nula. 
+Vezmeme-li nulu jako speciální případ, může být přesnost rozšířena o jeden bit 
+tak, že binární jedničku nejvyššího řádu do objektu neukládáme. 
+<BR><B>Mantisa</B> 16bitových a 32bitových reálných čísel tedy obsahuje 
+v&nbsp;nejvyšším bitu druhou významnou binární číslici. V&nbsp;80bitovém reálném 
+číslu není nejvyšší významná číslice ignorována. <BR><B>Mantisa</B> vyjadřuje 
+binární číslo ve tvaru 1.xxxxxxx. <B>Exponent</B> potom určuje počet binárních 
+řádků, o které musíme destinou tečku pomyslně posunout, abychom získali 
+požadované číslo. Posouváme-li tečku doleva, bude exponent záporný, posováme-li 
+doprava, bude exponent kladný. Zjednodušeně lze číslo vyjádřit matematicky: 
+<I>Mantisa × 2<SUP> Exponent</SUP></I> <BR><B>Exponent</B> je celé číslo kladné 
+nebo záporné. Není vyjádřen ve dvojkovém doplňkovém kódu, jak by se dalo 
+předpokládat, ale v&nbsp;kódu posunuté nuly. Je-li prostor pro uložení exponentu 
+8bitový (Single Precision), je k&nbsp;zapisovanému číslu přičtena hodnota 7Fh 
+(127). Potom nula bude zapsána jako 7Fh, jednička jako 80h atd. Je-li prostor 
+pro uložení exponentu 11bitový (Double Precision), přičítá se 3FFh (1023), a 
+je-li exponent 15bitový, přičítá se 3FFFh (16383). Při čtení čísla tohoto tvaru 
+musíme výše uvedenou hodnotu odečíst. <BR>Ačkoli se tento způsob ukládání čísel 
+zdá být nevhodný, přináší jeden významný efekt, který spočívá ve snadném 
+znaménkovém porovnávání dvou reálných čísel bez ohledu na jejich šířku. Obě 
+reálná čísla začneme srovnávat od znaménkového bitu směrem k&nbsp;nejnižšímu 
+bitu objektu. Jakmile narazíme na dvojici neshodujících se bitů, sdělí nám tyto 
+dva bity, které z&nbsp;čísel je numericky větší. 
+<P><B>Příklady uložení reálných čísel v paměti:</B> 
+<P align=center>
+<TABLE border=1 rules=groups>
+  <COLGROUP align=right>
+  <COLGROUP align=middle>
+  <COLGROUP align=middle span=2>
+  <COLGROUP align=middle span=2>
+  <TBODY>
+  <TR>
+    <TD rowSpan=2 vAlign=top>Číslo&nbsp; 
+    <TD>&nbsp; S &nbsp; 
+    <TD colSpan=2>&nbsp; Exponent 
+    <TD colSpan=2>&nbsp; Mantisa </TD>
+  <TR>
+    <TD>&nbsp;<SMALL>31</SMALL> 
+    <TD align=left>&nbsp; <SMALL>30</SMALL> 
+    <TD align=right><SMALL>23</SMALL> &nbsp; 
+    <TD align=left>&nbsp; <SMALL>22</SMALL> 
+    <TD align=right><SMALL>0</SMALL> &nbsp; </TD></TR>
+  <TBODY>
+  <TR>
+    <TD>12.5&nbsp; 
+    <TD>0 
+    <TD colSpan=2>&nbsp;&nbsp; 1000&nbsp;0010 &nbsp;&nbsp; 
+    <TD colSpan=2>&nbsp;&nbsp; 1001&nbsp;0000...0 &nbsp;&nbsp; </TD>
+  <TR>
+    <TD>-12.5&nbsp; 
+    <TD>1 
+    <TD colSpan=2>1000&nbsp;0010 
+    <TD colSpan=2>1001&nbsp;0000...0 </TD>
+  <TR>
+    <TD>0.3125&nbsp; 
+    <TD>0 
+    <TD colSpan=2>0111&nbsp;1101 
+    <TD colSpan=2>0100&nbsp;0000...0 </TD>
+  <TR>
+    <TD>&nbsp; -0.3125&nbsp; 
+    <TD>1 
+    <TD colSpan=2>0111&nbsp;1101 
+    <TD colSpan=2>0100&nbsp;0000...0 </TD>
+  <TR>
+    <TD>1.0&nbsp; 
+    <TD>0 
+    <TD colSpan=2>0111&nbsp;1111 
+    <TD colSpan=2>0000&nbsp;0000...0 </TD></TR></TBODY></TABLE>
+<P align=center>
+<TABLE border=1 rules=groups>
+  <COLGROUP align=right>
+  <COLGROUP align=middle>
+  <COLGROUP align=middle span=2>
+  <COLGROUP align=middle span=2>
+  <TBODY>
+  <TR>
+    <TD rowSpan=2 vAlign=top>Číslo&nbsp; 
+    <TD>&nbsp; S &nbsp; 
+    <TD colSpan=2>&nbsp; Exponent 
+    <TD colSpan=2>&nbsp; Mantisa </TD>
+  <TR>
+    <TD>&nbsp;<SMALL>79</SMALL> 
+    <TD align=left>&nbsp; <SMALL>78</SMALL> 
+    <TD align=right><SMALL>64</SMALL> &nbsp; 
+    <TD align=left>&nbsp; <SMALL>63</SMALL> 
+    <TD align=right><SMALL>0</SMALL> &nbsp; </TD></TR>
+  <TBODY>
+  <TR>
+    <TD>12.5&nbsp; 
+    <TD>0 
+    <TD colSpan=2>&nbsp;&nbsp; 100&nbsp;0000&nbsp;0000&nbsp;0010 &nbsp;&nbsp; 
+    <TD colSpan=2>&nbsp;&nbsp; 1100&nbsp;1000...0 &nbsp;&nbsp; </TD>
+  <TR>
+    <TD>&nbsp;-0.3125&nbsp; 
+    <TD>1 
+    <TD colSpan=2>011&nbsp;1111&nbsp;1111&nbsp;1101 
+    <TD colSpan=2>1010&nbsp;0000...0 </TD></TR></TBODY></TABLE>
+<P>&nbsp;
+<P><A name=#Symboly><B><BIG>Výhradní symboly</BIG></B> 
+<P align=justify><B>&nbsp;&nbsp; &nbsp; Nula</B> (Zero) může být kladná nebo 
+záporná. Koprocesor běžně pracuje s&nbsp;kladnou nulou. 
+<P align=justify><B>&nbsp; &nbsp; Nekonečno</B> (Infinity) může být opět kladné 
+nebo záporné. Pokud bychom obě nekonečna srvonávali, je kladné nekonečno větší 
+než záporné (viz také <A 
+href="http://www.guh.cz/~valeon/texty/8087/8087.htm#CWR">řídící registr</A>). 
+<P align=center>
+<TABLE border=1 rules=groups>
+  <COLGROUP align=right>
+  <COLGROUP align=middle>
+  <COLGROUP align=middle span=2>
+  <COLGROUP align=middle span=2>
+  <TBODY>
+  <TR>
+    <TD rowSpan=2 vAlign=top>Číslo&nbsp; 
+    <TD>&nbsp; S &nbsp; 
+    <TD colSpan=2>&nbsp; Exponent 
+    <TD colSpan=2>&nbsp; Mantisa </TD>
+  <TR>
+    <TD>&nbsp;<SMALL>31</SMALL> 
+    <TD align=left>&nbsp; <SMALL>30</SMALL> 
+    <TD align=right><SMALL>23</SMALL> &nbsp; 
+    <TD align=left>&nbsp; <SMALL>22</SMALL> 
+    <TD align=right><SMALL>0</SMALL> &nbsp; </TD></TR>
+  <TBODY>
+  <TR>
+    <TD>Kladná nula&nbsp; 
+    <TD>0 
+    <TD colSpan=2>&nbsp;&nbsp; 0000&nbsp;0000 &nbsp;&nbsp; 
+    <TD colSpan=2>&nbsp;&nbsp; 0000&nbsp;0000...0 &nbsp;&nbsp; </TD>
+  <TR>
+    <TD>Záporná nula&nbsp; 
+    <TD>1 
+    <TD colSpan=2>&nbsp;&nbsp; 0000&nbsp;0000 &nbsp;&nbsp; 
+    <TD colSpan=2>&nbsp;&nbsp; 0000&nbsp;0000...0 &nbsp;&nbsp; </TD>
+  <TR>
+    <TD>Kladné nekonečno&nbsp; 
+    <TD>0 
+    <TD colSpan=2>&nbsp;&nbsp; 1111&nbsp;1111 &nbsp;&nbsp; 
+    <TD colSpan=2>&nbsp;&nbsp; 0000&nbsp;0000...0 &nbsp;&nbsp; </TD>
+  <TR>
+    <TD>&nbsp;Záporné nekonečno&nbsp; 
+    <TD>1 
+    <TD colSpan=2>&nbsp;&nbsp; 1111&nbsp;1111 &nbsp;&nbsp; 
+    <TD colSpan=2>&nbsp;&nbsp; 0000&nbsp;0000...0 &nbsp;&nbsp; 
+</TD></TR></TBODY></TABLE>
+<P align=justify><B>&nbsp; &nbsp; Nenormalizované číslo</B> (Denormalized 
+number) se připouští pouze tehdy, potřebujeme-li zapsat menší číslo 
+v&nbsp;absolutní hodnotě, než je exponent schopen zobrazit. Potom doplněním 
+nevýznamných levostranných nul do mantisy můžeme číslo ještě (v&nbsp;absolutní 
+hodnotě) zmenšit na úkor přesnosti. O číslu musí být známo, že je v 
+nenormalizovaném tvaru, aby se nedoplňovala jednička do nejvyššího řádu mantisy. 
+
+<P align=justify><B>&nbsp; &nbsp; Nečíselné hodnoty</B> (Not a Number) se 
+uvádějí pod zkratkou NaN. Poněvadž nejsou povoleny všechny kombinace bitů, jsou 
+nepovolené kombinace označeny NaN a koprocesor takové vstupní hodnoty odmítne. 
+Nečíselné hodnory jsou rozděleny do dvou skupin: neohlašované (Quiet) a 
+ohlašované (Signaling). Do neohlašovaných patří čísla s&nbsp;mantisou v rozmezí 
+od 100...01 do 111...11. Do ohlašovaných patří 100...01 až 101...11. Obě skupiny 
+mají exponent 111...11. 
+<P align=justify><B>&nbsp; &nbsp; Neurčitá hodnota</B> (Indefinite) je určena 
+pro každý typ čísla včetně celočíselných. Běžně je neurčitá hodnota 
+představována největším záporným číslem v&nbsp;absolutní hodnotě. 
+V&nbsp;reálných formátech je neurčitá hodnota tvořena exponentem obsahujícím 
+samé jedničky a mantisou obsahující 110...00. 
+<P>&nbsp;
+<P><A name=#Vyjimky>
+<H2>Výjimky koprocesoru</H2>
+<P>Detekuje-li koprocesor chybu při výpočtu, procesor na tento stav odpoví 
+generováním výjimky 16. Koprocesor umí detekovat několik různých chyb. Konkrétní 
+druh chyby se oznamuje ve <A 
+href="http://www.guh.cz/~valeon/texty/8087/8087.htm#Stav">stavovém registru</A> 
+koprocesoru. Možné chyby jsou následující: 
+<P>
+<TABLE border=0>
+  <COLGROUP align=right vAlign=top>
+  <TBODY>
+  <TR>
+    <TD><B>I -</B> 
+    <TD>
+      <DIV align=justify><B>Invalid operation - Chybná operace</B> je detekována 
+      rozpoznáním NaN, nepodporovaného formátu čísla, nepovolenou operací (např. 
+      0 × nekonečno, 0/0, (kladné nekonečno) + (záporné nekonečno)) nebo 
+      přeplněním <A 
+      href="http://www.guh.cz/~valeon/texty/8087/8087.htm#DataReg">zásobníku</A> 
+      (potom je také nastaveno <A 
+      href="http://www.guh.cz/~valeon/texty/8087/8087.htm#Stav">SF</A>). Je-li 
+      toto přerušení maskováno, vrací se jako výsledek neohlašované NaN, 
+      nedefinované celé číslo nebo nedefinované BCD.</DIV></TD>
+  <TR>
+    <TD><B>D&nbsp;-</B> 
+    <TD>
+      <DIV align=justify><B>Denormalized - Nenormalizovaný výsledek</B> je 
+      zapříčiněn hodnotou výsledku, která je v&nbsp;absolutní hodnotě menší než 
+      číslo zobrazitelné nejmenším záporným normalizovaným číslem. Je-li 
+      přerušení maskováno, výpočet pokračuje normálně dál.</DIV></TD>
+  <TR>
+    <TD><B>Z -</B> 
+    <TD>
+      <DIV align=justify><B>Divide by zero - Dělení nulou</B> nastane tehdy, 
+      je-li dělitel nula a dělenec je různý od nekonečna a nuly. Je-li přerušení 
+      maskováno, je výsledek nekonečno.</DIV></TD>
+  <TR>
+    <TD><B>O -</B> 
+    <TD>
+      <DIV align=justify><B>Numeric overflow - Přeplnění</B> (Přetečení) je 
+      detekováno tehdy, je-li výsledek větší než maximální zobrazitelné číslo 
+      v&nbsp;použitém formátu dat. Je-li přerušení maskováno, je výsledek 
+      největší možné konečné číslo nebo nekonečno.</DIV></TD>
+  <TR>
+    <TD><B>U -</B> 
+    <TD>
+      <DIV align=justify><B>Numeric underflow - Nenaplnění</B> (Podtečení) 
+      nastane při nenulovém výsledku operace, který je tak malý, že jej nelze 
+      v&nbsp;daném formátu dat zobrazit. Je-li přerušení maskováno, je výsledek 
+      nenormalizované číslo nebo nula.</DIV></TD>
+  <TR>
+    <TD><B>P -</B> 
+    <TD>
+      <DIV align=justify><B>Precision - Nepřesný výsledek</B> nastane tehdy, 
+      nebyl-li koprocesor schopen počítat výsledek v&nbsp;zadané přesnosti. 
+      Výsledek je zaokrouhlen podle <A 
+      href="http://www.guh.cz/~valeon/texty/8087/8087.htm#CWR">řídícího 
+      registru</A>. Je-li přerušení maskováno, výpočet pokračuje 
+  dál.</DIV></TD></TR></TBODY></TABLE>
+<P>&nbsp;
+<P><A name=#Registry>
+<H2>Registry koprocesoru</H2>
+<P><A name=DataReg><BIG><B>Datové registry (zásobník)</B></BIG> <BR>Koprocesor 
+obsahuje 8 80bitových datových registrů. Tato skupina registrů může být použita 
+buď jako zásobník, nebo jako jednotlivě adresované registry. <BR>Používá-li se 
+jako zásobník, potom je ve <A 
+href="http://www.guh.cz/~valeon/texty/8087/8087.htm#Stav">stavovém registru</A> 
+v&nbsp;položce "Vrchol" číslo registru, který je právě na vrcholu zásobníku - 
+tj. číslo registru do kterého byla operací vložení do zásobníku zapsána poslední 
+hodnota. <BR>Registr, který je právě na vrcholu zásobníku, je označován ST(0) 
+nebo jen ST. Ukazuje-li "Vrchol" např. na registr číslo 2, potom ST(0) 
+znázorňuje registr číslo 2, ST(1) registr číslo 3, ST(2) registr číslo 4, ST(5) 
+registr číslo 7, ST(6) registr číslo 0, ST(7) registr číslo 1. <BR>Osm datových 
+registrů je skutečně implementováno jako zásobník, nikoli jako kruhová fronta. 
+Proto je-li do zásobníku vloženo více než 8 operandů, generuje koprocesor 
+přerušení chybná operace (ve <A 
+href="http://www.guh.cz/~valeon/texty/8087/8087.htm#Stav">stavovém registru</A> 
+je nsataveno SF - chyba zásobníku a C1 - přeplnění). Přerušení se generuje také 
+v&nbsp;tom případě, pokud je ze zásobníku vybráno více než 8 položek. <BR>Každý 
+z&nbsp;registrů má navíc ještě dvoubitovou položku v tzv. <B>doplňujícím 
+registru</B>, která obsahuje doplňující informace o registru. Jsou čtyři možné 
+kombinace: 
+<TABLE border=0>
+  <TBODY>
+  <TR>
+    <TD>&nbsp;00 
+    <TD>&nbsp;správný obsah registru </TD>
+  <TR>
+    <TD>&nbsp;01 
+    <TD>&nbsp;nula </TD>
+  <TR>
+    <TD>&nbsp;10 
+    <TD>&nbsp;nekonečno, NaN, nenormalizováno nebo chybný formát </TD>
+  <TR>
+    <TD>&nbsp;11 
+    <TD>&nbsp;prázdný </TD></TR></TBODY></TABLE>&nbsp; 
+<P><B>Stavba datových registrů a doplňujícího registru:</B> 
+<P><IMG src="" align-left> 
+<P><A name=CWR><BIG><B>Řídící registr (CWR)</B></BIG> <BR>Nastavuje některé 
+parametry pro výpočty v&nbsp;koprocesoru. 
+<P><IMG src="Matematický koprocesor Intel 8087_files/cwr.gif"> 
+<P>
+<TABLE border=0>
+  <TBODY>
+  <TR>
+    <TD><B>IC</B> 
+    <TD>(Infinity Control) určuje výklad záporného a kladného nekonečna: </TD>
+  <TR>
+    <TD>
+    <TD>0 kladné i záporné nekonečno jsou chápány jako nekonečná veličina bez 
+      znaménka <BR>1 kladné a záporné nekonečno jsou pojaty jako dvě různé 
+      veličiny se znaménkem <BR>implicitně je IC nastaveno na 0 </TD>
+  <TR>
+    <TD><B>RC</B> 
+    <TD>(Rounding Control) řídí zaokrouhlování výsledků. Možné kombinace jsou 
+      tyto: </TD>
+  <TR>
+    <TD>
+    <TD>00 zaokrouhlení na nejbližší číslo <BR>01 zaokrouhlení dolů (směrem 
+      k&nbsp;zápornému nekonečnu) <BR>10 zaokrouhlení nahoru (směrem ke kladnému 
+      nekonečnu) <BR>11 oseknutí <BR>implicitně je RC nastaveno na 00 </TD>
+  <TR>
+    <TD><B>PC</B> 
+    <TD>(Precision Control) stanovuje přesnost výsledku. Přesnost může být 
+      snížena proto, aby byl zrychlen výpočet. Možné kombinace jsou tyto: </TD>
+  <TR>
+    <TD>
+    <TD>00 24 bitů (Single Precision) <BR>01 nepoužito <BR>10 53 bitů (Double 
+      Precision) <BR>11 64 bitů (Extended Precision) <BR>implicitně je PC 
+      nastaveno na 11 </TD>
+  <TR>
+    <TD><B>IEM</B> 
+    <TD>(Interrupt Error Mask) jedničkové maskuje všechna přerušení 
+      (s&nbsp;výjimkou situace, kdy CPU vykonává instrukci WAIT) </TD>
+  <TR>
+    <TD><B>PM</B> 
+    <TD>(Precision Mask) jedničkové maskuje přerušení vyvolané nepřesným 
+      výsledkem </TD>
+  <TR>
+    <TD><B>UM</B> 
+    <TD>(Underflow Mask) jedničkové maskuje přerušení vyvolané podtečením </TD>
+  <TR>
+    <TD><B>OM</B> 
+    <TD>(Overflow Mask) jedničkové maskuje přerušení vyvolané přetečením </TD>
+  <TR>
+    <TD><B>ZM</B> 
+    <TD>(Divide-by-Zero Mask) jedničkové maskuje přerušení vyvolané dělením 
+      nulou </TD>
+  <TR>
+    <TD><B>DM</B> 
+    <TD>(Denormalized Mask) jedničkové maskuje přerušení vyvolané 
+      nenormalizovaným výsledkem </TD>
+  <TR>
+    <TD><B>IM</B> 
+    <TD>(Invalid Operation Mask) jedničkové maskuje přerušení vyvolané chybnou 
+      operací </TD></TR></TBODY></TABLE>&nbsp; 
+<P><A name=Stav><BIG><B>Stavový registr</B></BIG> <BR>
+<P><IMG src="Matematický koprocesor Intel 8087_files/stav.gif"> 
+<P>
+<TABLE border=0>
+  <TBODY>
+  <TR>
+    <TD><B>B</B> 
+    <TD>(Busy) jedničkový oznamuje, že operace není dokončena. U vyšších 
+      procesorů neodráží aktuální stav koprocesoru a obsahuje totéž co bit ES. 
+    </TD>
+  <TR>
+    <TD><B>C3, C2, C1, C0</B> 
+    <TD>(Condition C<I>i</I>) jsou čtyři bity příznaků nastavovaných podle 
+      výsledku provedené operace. </TD>
+  <TR>
+    <TD><B>Vrchol</B> 
+    <TD>(Top) je 3bitová hodnota uchovávající číslo <A 
+      href="http://www.guh.cz/~valeon/texty/8087/8087.htm#DataReg">datového 
+      registru</A>, který je právě na vrcholu zásobníku. </TD>
+  <TR>
+    <TD><B>ES</B> 
+    <TD>(Error Summary) je programovým duplikátem signálu FERR. Sděluje, že 
+      nastalo přerušení, které bylo vyvoláno jednou z&nbsp;nemaskovaných 
+      chybových příčin. </TD>
+  <TR>
+    <TD><B>SF</B> 
+    <TD>(Stack Fault) upřesňuje, že chybná operace byla vyvolána chybou v <A 
+      href="http://www.guh.cz/~valeon/texty/8087/8087.htm#DataReg">zásobníku</A>. 
+      Pokud je tento bit nastaven, je C1=1 při přeplnění zásobníku nebo C1=0 při 
+      nenaplnění zásobníku. </TD>
+  <TR>
+    <TD><B>PE, UE, OE, ZE, DE, IE</B> 
+    <TD>Každý z těchto bitů oznamuje, že přerušení nastalo po výskytu 
+      příslušné chyby. Jednotlivé bity odpovídají bitům <A 
+      href="http://www.guh.cz/~valeon/texty/8087/8087.htm#CWR">řídícího 
+      registru</A>, které na rozdíl od stavového registru jednotlivá přerušení 
+      maskují. </TD></TR></TBODY></TABLE>
+<P>&nbsp;
+<P><A name=#Instrukce>
+<H2>Instrukční repertoár a komunikace koprocesoru s procesorem</H2>
+<P align=justify><A name=#Komunikace>Instrukce určené koprocesoru jsou 
+v&nbsp;instrukčním toku společně s&nbsp;instrukcemi pro procesor. Jakmile 
+procesor rozpozná, že instrukce je určena koprocesoru (prvních 5 bitů instrukce 
+je 11011), předá ji na V/V bránu určenou pro předávání příkazů koprocesoru (8000 
+00F8h). Potom procesor normálně pokračuje ve zpracovávání instrukčního toku. 
+Pokud FPU požaduje více informací (tj. další slabiku operačního kódu nebo 
+slabiku operandu), nastaví signál PEREQ (Processor Extension Request) do aktivní 
+úrovně (v&nbsp;Intel486 a vyšších není vyveden vně procesoru). Na základě toho 
+si procesor přečte V/V bránu pro předávání příkazů koprocesoru, aby zjistil, co 
+koprocesor potřebuje. Pokud koprocesor vyžaduje přenést data, předá je procesor 
+prostřednictvím datové V/V brány (8000 00FCh). <BR>Po dobu vykonávání instrukce 
+je nastavena aktivní úroveň signálu BUSY (u 8086/8088 je to signál TEST) 
+(v&nbsp;Intel486 a vyšších není opět vyveden vně procesoru), který informuje 
+procesor o tom, že koprocesor není schopen přijímat další příkazy. 
+V&nbsp;takovém případě procesor čeká na dokončení činnosti koprocesoru. <BR>Pro 
+každou mnemonickou instrukci koprocesoru, která ovlivňuje numerickou jednotku, 
+generuje asembler dvě strojové instrukce: kód instrukce WAIT (9Bh) a kód 
+příslušné varianty instrukce ESC. <BR>Instrukce WAIT, zkoumající signál BUSY 
+(TEST), se předřazuje, aby se koprocesoru umožnilo dokončit rozpracovanou 
+operaci dříve, než dekóduje ESC. 
+<P><B>K&nbsp;součinnosti procesoru a koprocesoru:</B> 
+<P align=center><IMG src="Matematický koprocesor Intel 8087_files/wait.gif"> 
+<P> <BR><A name=#InstrukceSeznam>
+<TABLE border=0>
+  <CAPTION align=left><B>&nbsp;Legenda k seznamu instrukcí:</B> </CAPTION>
+  <TBODY>
+  <TR>
+    <TD><B>&nbsp;D</B> a <B>S</B> 
+    <TD>- cílové a zdrojové místo (operand) definované symbolickou adresou </TD>
+  <TR>
+    <TD><B>&nbsp;(D)</B> a <B>(S)</B> 
+    <TD>- obsah místa adresovaného D a S </TD>
+  <TR>
+    <TD><B>&nbsp;ST</B> 
+    <TD>- ukazatel vrcholu zásobníku </TD>
+  <TR>
+    <TD><B>&nbsp;(ST)</B> 
+    <TD>- obsah vrcholu zásobníku </TD>
+  <TR>
+    <TD><B>&nbsp;ST(i)</B> 
+    <TD>- indexovaně adresovaný registr zásobníku </TD>
+  <TR>
+    <TD><B>&nbsp;msr mlr mtr&nbsp;</B> 
+    <TD>- operand typu krátký real nebo dlouhý real nebo pomocný real v paměti 
+    </TD>
+  <TR>
+    <TD><B>&nbsp;mwi msi mli</B> 
+    <TD>- operand typu integer nebo krátký integer nebo dlouhý integer v 
+      paměti </TD>
+  <TR>
+    <TD><B>&nbsp;mBCD</B> 
+    <TD>- operand typu zhuštěný BCD v paměti </TD>
+  <TR>
+    <TD><B>&nbsp;//</B> a <B>/</B> 
+    <TD>- označení alternativních kombinací v operandovém poli instrukce 
+  </TD></TR></TBODY></TABLE>
+<P align=center>
+<TABLE border=1>
+  <TBODY>
+  <TR>
+    <TD align=middle><B>Instrukce</B>
+    <TD align=middle><B>Operace</B>
+    <TD align=middle><B>Operandy</B>
+    <TD align=middle><B>&nbsp;Indikace chyb&nbsp;</B>
+    <TD align=middle><B>Poznámky</B> </TD>
+  <TR>
+    <TD align=middle colSpan=5><B>P ř e s u n y &nbsp; d a t</B> </TD>
+  <TR>
+    <TD><B>&nbsp;FLD&nbsp; S</B> 
+    <TD><CODE>&nbsp;ST := ST - 1<BR>&nbsp;převod S na pomocný 
+      &nbsp;real<BR>&nbsp;Dosazení do (ST)</CODE> 
+    <TD>&nbsp;ST(i), msr, mlr, &nbsp;mtr 
+    <TD>&nbsp;I, D 
+    <TD>&nbsp;zavedení real 
+  <TR>
+    <TD><B>&nbsp;FILD&nbsp; S</B> 
+    <TD><CODE>&nbsp;ST := ST - 1<BR>&nbsp;převod S na pomocný 
+      &nbsp;real<BR>&nbsp;Dosazení do (ST)</CODE> 
+    <TD>&nbsp;mwi, msi, mli 
+    <TD>&nbsp;I 
+    <TD>&nbsp;zavedení integer </TD>
+  <TR>
+    <TD><B>&nbsp;FBLD&nbsp; S</B> 
+    <TD><CODE>&nbsp;ST := ST - 1<BR>&nbsp;převod S na pomocný 
+      &nbsp;real<BR>&nbsp;Dosazení do (ST)</CODE> 
+    <TD>&nbsp;mBCD 
+    <TD>&nbsp;I 
+    <TD>&nbsp;zavedení BCD </TD>
+  <TR>
+    <TD><B>&nbsp;FST&nbsp; D</B> 
+    <TD><CODE>&nbsp;převod (ST) do formátu &nbsp;operandu<BR>&nbsp;uložení do 
+      D</CODE> 
+    <TD>&nbsp;ST(i), msr, mlr 
+    <TD>&nbsp;I, O, U, P 
+    <TD>&nbsp;uložení real </TD>
+  <TR>
+    <TD><B>&nbsp;FIST&nbsp; D</B> 
+    <TD><CODE>&nbsp;převod (ST) do formátu &nbsp;operandu<BR>&nbsp;uložení do 
+      D</CODE> 
+    <TD>&nbsp;mwi, msi 
+    <TD>&nbsp;I, P 
+    <TD>&nbsp;uložení integer </TD>
+  <TR>
+    <TD><B>&nbsp;FBSTP&nbsp; D</B> 
+    <TD><CODE>&nbsp;převod (ST) do formátu &nbsp;operandu<BR>&nbsp;uložení do 
+      D<BR>&nbsp;ST := ST + 1</CODE> 
+    <TD>&nbsp;mBCD 
+    <TD>&nbsp;I 
+    <TD>&nbsp;uložení BCD + pop </TD>
+  <TR>
+    <TD><B>&nbsp;FSTP&nbsp; D</B> 
+    <TD><CODE>&nbsp;převod (ST) do formátu &nbsp;operandu<BR>&nbsp;uložení do 
+      D<BR>&nbsp;ST := ST + 1</CODE> 
+    <TD>&nbsp;ST(i), msr, mlr, &nbsp;mtr 
+    <TD>&nbsp;I, O, U, P 
+    <TD>&nbsp;uložení real + pop </TD>
+  <TR>
+    <TD><B>&nbsp;FISTP&nbsp; D</B> 
+    <TD><CODE>&nbsp;převod (ST) do formátu &nbsp;operandu<BR>&nbsp;uložení do 
+      D<BR>&nbsp;ST := ST + 1</CODE> 
+    <TD>&nbsp;mwi, msi, mli 
+    <TD>&nbsp;I, P 
+    <TD>&nbsp;uložení integer + pop </TD>
+  <TR>
+    <TD><B>&nbsp;FXCH//D</B> 
+    <TD><CODE>&nbsp;výměna obsahů mezi &nbsp;(ST) a&nbsp;D</CODE> 
+    <TD>&nbsp;ST(i) - není-li D<BR>&nbsp;uveden, platí &nbsp;ST&nbsp;(1) 
+    <TD>&nbsp;I 
+    <TD>&nbsp;výměna mezi (ST)<BR>&nbsp;DST </TD>
+  <TR>
+    <TD align=middle colSpan=5><B>A r i t m e t i c k é &nbsp; o p e r a c 
+      e</B> </TD>
+  <TR>
+    <TD><B>&nbsp;FADD//S/D, S</B> 
+    <TD><CODE>&nbsp;(D) := (D) + (S)</CODE> 
+    <TD>&nbsp;viz poznámka 1 
+    <TD>&nbsp;I, D, O, U, P 
+    <TD>&nbsp;sčítání real </TD>
+  <TR>
+    <TD><B>&nbsp;FADDP&nbsp;D, S</B> 
+    <TD><CODE>&nbsp;(ST(i)) := (ST(i)) + &nbsp;(ST)<BR>&nbsp; ST := ST + 
+      1</CODE> 
+    <TD>&nbsp;D: ST(i), S: ST 
+    <TD>&nbsp;I,&nbsp;D,&nbsp;O,&nbsp;U,&nbsp;P 
+    <TD>&nbsp;sčítání real + pop </TD>
+  <TR>
+    <TD><B>&nbsp;FIADD&nbsp; S</B> 
+    <TD><CODE>&nbsp;(ST) := (ST) + (S)</CODE> 
+    <TD>&nbsp;mwi, msi 
+    <TD>&nbsp;I, D, O, U, P 
+    <TD>&nbsp;sčítání integer </TD>
+  <TR>
+    <TD><B>&nbsp;FSUB//S/D, S</B> 
+    <TD><CODE>&nbsp;(D) := (D) - (S)</CODE> 
+    <TD>&nbsp;viz poznámka 1 
+    <TD>&nbsp;I, D, O, U, P 
+    <TD>&nbsp;odčítání real </TD>
+  <TR>
+    <TD><B>&nbsp;FSUBP&nbsp; D, S</B> 
+    <TD><CODE>&nbsp;(ST(i)) := (ST(i)) - &nbsp;(ST)<BR>&nbsp; ST := ST + 
+      1</CODE> 
+    <TD>&nbsp;D: ST(i), S: ST 
+    <TD>&nbsp;I, D, O, U, P 
+    <TD>&nbsp;odčítání real + pop </TD>
+  <TR>
+    <TD><B>&nbsp;FSUBR//S/D,&nbsp;S</B> 
+    <TD><CODE>&nbsp;(D) := (S) - (ST(i))<BR>&nbsp; ST := ST + 1</CODE> 
+    <TD>&nbsp;viz poznámka 1 
+    <TD>&nbsp;I, D, O, U, P 
+    <TD>&nbsp;reverzní odčítání real </TD>
+  <TR>
+    <TD><B>&nbsp;FSUBRP&nbsp; D, S</B> 
+    <TD><CODE>&nbsp;(ST(i)) := (ST) - &nbsp;(ST&nbsp;(i))<BR>&nbsp; ST := ST + 
+      1</CODE> 
+    <TD>&nbsp;D: ST(i), S: ST 
+    <TD>&nbsp;I, D, O, U, P 
+    <TD>&nbsp;reverzní odčítání real + &nbsp;pop </TD>
+  <TR>
+    <TD><B>&nbsp;FISUB&nbsp; S</B> 
+    <TD><CODE>&nbsp;(ST) := (ST) - (S)</CODE> 
+    <TD>&nbsp;mwi, msi 
+    <TD>&nbsp;I, D, O, P 
+    <TD>&nbsp;odčítání integer </TD>
+  <TR>
+    <TD><B>&nbsp;FISUBR&nbsp; S</B> 
+    <TD><CODE>&nbsp;(ST) := (S) - (ST)</CODE> 
+    <TD>&nbsp;mwi, msi 
+    <TD>&nbsp;I, D, O, P 
+    <TD>&nbsp;reverzní odčítání integer </TD>
+  <TR>
+    <TD><B>&nbsp;FMUL//S/D, S</B> 
+    <TD><CODE>&nbsp;(D) := (D) * (S)</CODE> 
+    <TD>&nbsp;viz poznámka 1 
+    <TD>&nbsp;I, D, O, U, P 
+    <TD>&nbsp;násobení real </TD>
+  <TR>
+    <TD><B>&nbsp;FMULP&nbsp; D, S</B> 
+    <TD><CODE>&nbsp;(ST(i)) := (ST(i)) * &nbsp;(ST)<BR>&nbsp; ST := ST + 
+      1</CODE> 
+    <TD>&nbsp;D: ST(i), S: ST 
+    <TD>&nbsp;I, D, O, U, P 
+    <TD>&nbsp;násobení real + pop </TD>
+  <TR>
+    <TD><B>&nbsp;FIMUL&nbsp; S</B> 
+    <TD><CODE>&nbsp;(ST) := (ST) * (S)</CODE> 
+    <TD>&nbsp;mwi, msi 
+    <TD>&nbsp;I, D, O, P 
+    <TD>&nbsp;násobení integer </TD>
+  <TR>
+    <TD><B>&nbsp;FDIV//S/D, S</B> 
+    <TD><CODE>&nbsp;(D) := (D) / (S)</CODE> 
+    <TD>&nbsp;viz poznámka 1 
+    <TD>&nbsp;I, D, Z, O, U, &nbsp;P 
+    <TD>&nbsp;dělení real </TD>
+  <TR>
+    <TD><B>&nbsp;FDIVP&nbsp; D, S</B> 
+    <TD><CODE>&nbsp;(ST(i)) := (ST(i)) / &nbsp;(ST)<BR>&nbsp; ST := ST + 
+      1</CODE> 
+    <TD>&nbsp;D: ST(i), S: ST 
+    <TD>&nbsp;I, D, Z, O, U, &nbsp;P 
+    <TD>&nbsp;dělení real + pop </TD>
+  <TR>
+    <TD><B>&nbsp;FDIVR//S/D, S</B> 
+    <TD><CODE>&nbsp;(D) := (S) / (D)</CODE> 
+    <TD>&nbsp;viz poznámka 1 
+    <TD>&nbsp;I, D, Z, O, U, &nbsp;P 
+    <TD>&nbsp;reverzní dělení real </TD>
+  <TR>
+    <TD><B>&nbsp;FDIVRP&nbsp; D, S</B> 
+    <TD><CODE>&nbsp;(ST(i)) := (ST) / &nbsp;(ST&nbsp;(i))<BR>&nbsp; ST := ST + 
+      1</CODE> 
+    <TD>&nbsp;D: ST(i), S: ST 
+    <TD>&nbsp;I, D, Z, O, U, &nbsp;P 
+    <TD>&nbsp;reverzní dělení real + &nbsp;pop </TD>
+  <TR>
+    <TD><B>&nbsp;FIDIV&nbsp; S</B> 
+    <TD><CODE>&nbsp;(ST) := (ST) / (S)</CODE> 
+    <TD>&nbsp;mwi, msi 
+    <TD>&nbsp;I, D, Z, O, U, &nbsp;P 
+    <TD>&nbsp;dělení integer </TD>
+  <TR>
+    <TD><B>&nbsp;FIDIVR&nbsp; S</B> 
+    <TD><CODE>&nbsp;(ST) := (S) / (ST)</CODE> 
+    <TD>&nbsp;mwi, msi 
+    <TD>&nbsp;I 
+    <TD>&nbsp;reverzní dělení integer </TD>
+  <TR>
+    <TD><B>&nbsp;FABS</B> 
+    <TD><CODE>&nbsp;(ST) := |(ST)|</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I 
+    <TD>&nbsp;absolutní hodnota </TD>
+  <TR>
+    <TD><B>&nbsp;FCHS</B> 
+    <TD><CODE>&nbsp;(ST) := -(ST)</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I 
+    <TD>&nbsp;změna znaménka </TD>
+  <TR>
+    <TD><B>&nbsp;FPREM</B> 
+    <TD><CODE>&nbsp;(ST) := (ST) mod &nbsp;(ST&nbsp;(1))</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I, D, U 
+    <TD>&nbsp;parciální zbytek </TD>
+  <TR>
+    <TD><B>&nbsp;FRNDINT</B> 
+    <TD><CODE>&nbsp;(ST) := integer (ST)</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I, P 
+    <TD>&nbsp;zaokrouhlení integer<BR>&nbsp;- definováno polem RC </TD>
+  <TR>
+    <TD><B>&nbsp;FSCALE</B> 
+    <TD><CODE>&nbsp;(ST) := (ST) * 2<SUP>(ST(1))</SUP></CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I, O, U 
+    <TD>&nbsp;rychlé násobení 2<SUP>n</SUP><BR>&nbsp;-2 <SUP>15</SUP> &lt;= n 
+      &lt; 2 <SUP>15</SUP> </TD>
+  <TR>
+    <TD><B>&nbsp;FSQRT</B> 
+    <TD><CODE>&nbsp;(ST) := sqrt((ST))</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I, D, P 
+    <TD>&nbsp;odmocnina </TD>
+  <TR>
+    <TD><B>&nbsp;FXTRACT</B> 
+    <TD><CODE>&nbsp;(ST) := exponent (ST)<BR>&nbsp;(ST) := ST - 
+      1<BR>&nbsp;(ST) := mantisa</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I 
+    <TD>&nbsp;rozdělení exponentu a &nbsp;mantisy </TD>
+  <TR>
+    <TD align=middle colSpan=5><B>K O M P A R A C E</B> </TD>
+  <TR>
+    <TD><B>&nbsp;FCOM//S</B> 
+    <TD><CODE>&nbsp;(ST) - (S); nastav &nbsp;C3, C2, C0 &nbsp;podle 
+      &nbsp;poznámky&nbsp;2</CODE> 
+    <TD>&nbsp;ST(i), msi, mli<BR>&nbsp;není li S uveden, platí &nbsp;ST(1) 
+    <TD>&nbsp;I, D 
+    <TD>&nbsp;komparace real </TD>
+  <TR>
+    <TD><B>&nbsp;FCOMP//S</B> 
+    <TD><CODE>&nbsp;(ST) - (S); nastav &nbsp;C3, C2, C0 &nbsp;podle 
+      &nbsp;poznámky&nbsp;2<BR>&nbsp;ST := ST + 1</CODE> 
+    <TD>&nbsp;ST(i), msi, mli<BR>&nbsp;není li S uveden, platí &nbsp;ST(1) 
+    <TD>&nbsp;I, D 
+    <TD>&nbsp;komparace real + pop </TD>
+  <TR>
+    <TD><B>&nbsp;FCOMPP</B> 
+    <TD><CODE>&nbsp;(ST) - (ST(1)); &nbsp;nastav &nbsp;C3, C2, C0 &nbsp;podle 
+      &nbsp;poznámky&nbsp;3</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I, D 
+    <TD>&nbsp;komparace real + &nbsp;dvakrát pop </TD>
+  <TR>
+    <TD><B>&nbsp;FICOM&nbsp; S</B> 
+    <TD><CODE>&nbsp;(ST) - (S), nastav &nbsp;C3, C2, C0 &nbsp;podle 
+      &nbsp;poznámky&nbsp;2</CODE> 
+    <TD>&nbsp;mwi, msi 
+    <TD>&nbsp;I, D 
+    <TD>&nbsp;komparace integer </TD>
+  <TR>
+    <TD><B>&nbsp;FICOMP&nbsp; S</B> 
+    <TD><CODE>&nbsp;(ST) - (S), nastav &nbsp;C3, C2, C0 &nbsp;podle 
+      &nbsp;poznámky&nbsp;2<BR>&nbsp;ST := ST + 1</CODE> 
+    <TD>&nbsp;mwi, msi 
+    <TD>&nbsp;I, D 
+    <TD>&nbsp;komparace integer + &nbsp;pop </TD>
+  <TR>
+    <TD><B>&nbsp;FTST</B> 
+    <TD><CODE>&nbsp;(ST) - 0.0, nastav &nbsp;C3, C2, C0 &nbsp;podle 
+      &nbsp;poznámky&nbsp;3</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I, D 
+    <TD>&nbsp;test vrcholu zásobníku<BR>&nbsp;znaménko nuly se ignoruje (-0,0 
+      = +0,0) </TD>
+  <TR>
+    <TD><B>&nbsp;FXAM</B> 
+    <TD><CODE>&nbsp;nastav C3, C2, C1 a &nbsp;C0 &nbsp;podle &nbsp;poznámky 
+      4</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;- 
+    <TD>&nbsp;stav vrcholu zásobníku </TD>
+  <TR>
+    <TD align=middle colSpan=5><B>T R A N S E N D E N T Y</B> </TD>
+  <TR>
+    <TD><B>&nbsp;F2XM1</B> 
+    <TD><CODE>&nbsp;(ST) := 2<SUP>(ST)</SUP> - 1</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;U, P 
+    <TD>&nbsp;při 0 &lt;= (ST) &lt;= 0.5 </TD>
+  <TR>
+    <TD><B>&nbsp;FPATAN</B> 
+    <TD><CODE>&nbsp;(ST) := arctg[(ST(1) &nbsp;/ (ST)]<BR>&nbsp;(ST) := (ST) + 
+      1</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;U, P 
+    <TD>&nbsp;parciální arctg při &nbsp;ST&nbsp;&gt;&nbsp;0 </TD>
+  <TR>
+    <TD><B>&nbsp;FPTAN</B> 
+    <TD><CODE>&nbsp;(ST) := Y<BR>&nbsp; ST &nbsp;:= ST - 1<BR>&nbsp;(ST) := 
+      X<BR>&nbsp;(viz poznámka 5)</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I, P 
+    <TD>&nbsp;parciální tg (ST)<BR>&nbsp;0 &lt; (ST) &lt; &#960;/4 </TD>
+  <TR>
+    <TD><B>&nbsp;FYL2X</B> 
+    <TD><CODE>&nbsp;(ST(1)) := (ST(1)) 
+      &nbsp;*&nbsp;log<SUB>2</SUB>(ST)<BR>&nbsp; ST &nbsp;:= ST - 1</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;P 
+    <TD>&nbsp;Y * log<SUB>2</SUB>X při ST &gt; 0 </TD>
+  <TR>
+    <TD align=middle colSpan=5><B>G E N E R O V Á N Í &nbsp; K O N S T A N 
+      T</B> </TD>
+  <TR>
+    <TD><B>&nbsp;FLDZ</B> 
+    <TD><CODE>&nbsp; ST := ST - 1<BR>&nbsp;(ST) := 0</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I 
+    <TD>&nbsp;zavedení nuly </TD>
+  <TR>
+    <TD><B>&nbsp;FLD1</B> 
+    <TD><CODE>&nbsp; ST := ST - 1<BR>&nbsp;(ST) := 1</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I 
+    <TD>&nbsp;zavedení jedničky </TD>
+  <TR>
+    <TD><B>&nbsp;FLDPI</B> 
+    <TD><CODE>&nbsp; ST := ST - 1<BR>&nbsp;(ST) := &#960;</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I 
+    <TD>&nbsp;zavedení &#960; </TD>
+  <TR>
+    <TD><B>&nbsp;FLDLZE</B> 
+    <TD><CODE>&nbsp; ST := ST - 1<BR>&nbsp;(ST) := log<SUB>2</SUB> e</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I 
+    <TD>&nbsp;zavedení log<SUB>2</SUB> e </TD>
+  <TR>
+    <TD><B>&nbsp;FLDL2T</B> 
+    <TD><CODE>&nbsp; ST := ST - 1<BR>&nbsp;(ST) := log<SUB>2</SUB> 10</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I 
+    <TD>&nbsp;zavedení log<SUB>2</SUB> 10 </TD>
+  <TR>
+    <TD><B>&nbsp;FLDLG2</B> 
+    <TD><CODE>&nbsp; ST := ST - 1<BR>&nbsp;(ST) := log<SUB>10</SUB> 2</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I 
+    <TD>&nbsp;zavedení log<SUB>10</SUB> 2 </TD>
+  <TR>
+    <TD><B>&nbsp;FLDLN2</B> 
+    <TD><CODE>&nbsp; ST := ST - 1<BR>&nbsp;(ST) := ln 2</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I 
+    <TD>&nbsp;zavedení ln 2 </TD>
+  <TR>
+    <TD align=middle colSpan=5><B>Ř Í Z E N Í</B> </TD>
+  <TR>
+    <TD><B>&nbsp;FINIT/FNINIT</B> 
+    <TD><CODE>&nbsp;CW := 03FFh<BR>&nbsp;TW := 0<BR>&nbsp;ST := 0</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;nulování 
+    <TD>&nbsp;inicializace </TD>
+  <TR>
+    <TD><B>&nbsp;FDISI/FNDISI</B> 
+    <TD><CODE>&nbsp;IEM := 1</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp; 
+    <TD>&nbsp;zákaz přerušení </TD>
+  <TR>
+    <TD><B>&nbsp;FENI/FNENI</B> 
+    <TD><CODE>&nbsp;IEM := 0</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp; 
+    <TD>&nbsp;povolení přerušení </TD>
+  <TR>
+    <TD><B>&nbsp;FCLEX/FNCLEX&nbsp;</B> 
+    <TD><CODE>&nbsp;B, IR, P, U, O, Z, D, &nbsp;I&nbsp;:=&nbsp;0</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp; 
+    <TD>&nbsp;nulování indikátorů chyb </TD>
+  <TR>
+    <TD><B>&nbsp;FINCSTP</B> 
+    <TD><CODE>&nbsp;ST := ST + 1</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp; 
+    <TD>&nbsp;inkrement ST </TD>
+  <TR>
+    <TD><B>&nbsp;FDECSTP</B> 
+    <TD><CODE>&nbsp;ST := ST - 1</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp; 
+    <TD>&nbsp;dekrement ST </TD>
+  <TR>
+    <TD><B>&nbsp;FSTSW&nbsp; D<BR>&nbsp;FNSTSW&nbsp; D</B> 
+    <TD><CODE>&nbsp;D := stavový registr</CODE> 
+    <TD>&nbsp;D: 2 byty paměti, registr AX (u 80387 a vyšších) 
+    <TD>&nbsp; 
+    <TD>&nbsp;uložení stavu </TD>
+  <TR>
+    <TD><B>&nbsp;FSTCW&nbsp; D<BR>&nbsp;FNSTCW&nbsp; D</B> 
+    <TD><CODE>&nbsp;D := (CWR)</CODE> 
+    <TD>&nbsp;D: 2 byty paměti 
+    <TD>&nbsp; 
+    <TD>&nbsp;uložení CW </TD>
+  <TR>
+    <TD><B>&nbsp;FLDCW&nbsp; S</B> 
+    <TD><CODE>&nbsp;CWR := (S)</CODE> 
+    <TD>&nbsp;S: 2 byty paměti 
+    <TD>&nbsp; 
+    <TD>&nbsp;zavedení CW </TD>
+  <TR>
+    <TD><B>&nbsp;FSTENV&nbsp; D<BR>&nbsp;FNSTENV&nbsp; D</B> 
+    <TD><CODE>&nbsp;(D) := (CWR)<BR>&nbsp;(D + 2) := (stavový 
+      &nbsp;registr)<BR>&nbsp;(D + 4) := (značky)<BR>&nbsp;(D + 6) := (ukazatel 
+      &nbsp;instrukcí)<BR>&nbsp;(D + 10) := (ukazatel &nbsp;operandů)</CODE> 
+    <TD>&nbsp;D: 14 bytů paměti 
+    <TD>&nbsp; 
+    <TD>&nbsp;uložení do paměti </TD>
+  <TR>
+    <TD><B>&nbsp;FLDENV&nbsp; S</B> 
+    <TD><CODE>&nbsp;CWR := (S)<BR>&nbsp;stav. reg. := (S + 2)<BR>&nbsp;značky 
+      := (S + 4)<BR>&nbsp;ukaz. instrukcí := (S &nbsp;+ 6)<BR>&nbsp;ukaz. 
+      operandů := (S &nbsp;+&nbsp;10)</CODE> 
+    <TD>&nbsp;S: 14 bytů paměti 
+    <TD>&nbsp; 
+    <TD>&nbsp;zavedení do paměti </TD>
+  <TR>
+    <TD><B>&nbsp;FSAVE&nbsp; D<BR>&nbsp;FNSAVE&nbsp; D</B> 
+    <TD><CODE>&nbsp;totéž co FSTENV + &nbsp;zásobník do 
+      (D),<BR>&nbsp;inicializace koprocesoru</CODE> 
+    <TD>&nbsp;D: 94 bytů paměti 
+    <TD>&nbsp; 
+    <TD>&nbsp;uložení do paměti </TD>
+  <TR>
+    <TD><B>&nbsp;FRSTOR&nbsp; S</B> 
+    <TD><CODE>&nbsp;totéž co FLDNEV + &nbsp;zásobník &nbsp;z&nbsp;(S)</CODE> 
+    <TD>&nbsp;S: 94 bytů paměti 
+    <TD>&nbsp; 
+    <TD>&nbsp;zavedení z paměti </TD>
+  <TR>
+    <TD><B>&nbsp;FFREE&nbsp; D</B> 
+    <TD><CODE>&nbsp;Nastavení značky pro &nbsp;ST(i) &nbsp;na "prázdný"</CODE> 
+
+    <TD>&nbsp;D: ST(i) 
+    <TD>&nbsp; 
+    <TD>&nbsp;prázdný registr </TD>
+  <TR>
+    <TD><B>&nbsp;FNOP</B> 
+    <TD><CODE>&nbsp;(ST) := (ST)</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp; 
+    <TD>&nbsp;prázdná operace </TD>
+  <TR>
+    <TD><B>&nbsp;FWAIT</B> 
+    <TD><CODE>&nbsp;jiný tvar instrukce &nbsp;WAIT</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp; 
+    <TD>&nbsp;uveď CPU do čekání na &nbsp;numerickou &nbsp;výjimku </TD>
+  <TR>
+    <TD align=middle colSpan=5><B>I N S T R U K C E &nbsp; K O P R O C E S O R 
+      U &nbsp; 80387 &nbsp; A &nbsp; V Y Š Š Í C H</B> </TD>
+  <TR>
+    <TD><B>&nbsp;FUCOM&nbsp; S/ &nbsp;FUCOMP &nbsp;S/ &nbsp;FUCOMPP</B> 
+    <TD><CODE>&nbsp;stejné jeko u FCOM/ &nbsp;FCOMP/ &nbsp;FCOMPP</CODE> 
+    <TD>&nbsp;S: ST(i), není-li S &nbsp;uvedeno, pak &nbsp;S&nbsp;=&nbsp;ST(1) 
+
+    <TD>&nbsp;I, D 
+    <TD>&nbsp;komparace real (+&nbsp;pop) &nbsp;(+&nbsp;dvakrát 
+      &nbsp;pop)<BR>&nbsp;znaménko nuly se ignoruje (-0,0 = +0,0) </TD>
+  <TR>
+    <TD><B>&nbsp;FCOS</B> 
+    <TD><CODE>&nbsp;(ST) := cos[(ST)]</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I, D, P 
+    <TD>&nbsp;cosinus pro (ST) v&nbsp;radiánech &nbsp;v&nbsp;intervalu 
+      &nbsp;|ST|&nbsp;&lt;&nbsp;2 <SUP>63</SUP> </TD>
+  <TR>
+    <TD><B>&nbsp;FPREM1</B> 
+    <TD><CODE>&nbsp;(ST) := (ST) mod &nbsp;(ST&nbsp;(1))</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I, D, U 
+    <TD>&nbsp;to samé co FPREM, ale &nbsp;instrukce &nbsp;pracuje podle 
+      &nbsp;normy IEEE Std 754 </TD>
+  <TR>
+    <TD><B>&nbsp;FSIN</B> 
+    <TD><CODE>&nbsp;(ST) := sin [(ST)]</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I, D, U, P 
+    <TD>&nbsp;sinus pro (ST) v&nbsp;radiánech &nbsp;v&nbsp;intervalu 
+      &nbsp;|ST|&nbsp;&lt;&nbsp;2 <SUP>63</SUP> </TD>
+  <TR>
+    <TD><B>&nbsp;FSINCOS</B> 
+    <TD><CODE>&nbsp;pomocná := cos[(ST)]<BR>&nbsp;(ST) := sin[(ST)]<BR>&nbsp; 
+      ST := ST - 1<BR>&nbsp;(ST):=pomocná</CODE> 
+    <TD>&nbsp;- 
+    <TD>&nbsp;I, D, U, P 
+    <TD>&nbsp;sinus a cosinus pro (ST) &nbsp;v&nbsp;radiánech 
+      &nbsp;v&nbsp;intervalu &nbsp;|ST|&nbsp;&lt;&nbsp;2 <SUP>63</SUP> </TD>
+  <TR></A><A name=#P6INST>
+    <TD align=middle colSpan=5><B>I N S T R U K C E &nbsp; F P U &nbsp; P 6 
+      &nbsp; P R O C E S O R Ů &nbsp; A &nbsp; V Y Š Š Í C H</B> </TD>
+  <TR>
+    <TD><B>&nbsp;FCOMI&nbsp;S/ &nbsp;FCOMIP&nbsp;S<BR>&nbsp;FUCOMI&nbsp;S/ 
+      &nbsp;FUCOMIP&nbsp;S</B> 
+    <TD><CODE>&nbsp;(ST) - (S);<BR>&nbsp;nastav EFLAGS podle výsledku</CODE> 
+    <TD>&nbsp;S: ST(i) 
+    <TD>&nbsp;I, D 
+    <TD>&nbsp;komparace real (+&nbsp;pop) a zavedení výsledku do registru 
+      příznaků EFLAGS<BR>&nbsp;znaménko nuly se ignoruje (-0,0 = +0,0) </TD>
+  <TR>
+    <TD><B>&nbsp;FCMOV</B>cond &nbsp;<B>S</B> 
+    <TD><CODE>&nbsp;if podmínka_je_splněna then &nbsp;(ST) := (S)</CODE> 
+    <TD>&nbsp;S: ST(i) 
+    <TD>&nbsp;- 
+    <TD>&nbsp;naplnění ST obsahem ST(i) v závislosti &nbsp;na EFLAGS nebo 
+      příznacíh FPU </TD>
+  <TR>
+    <TD>
+    <TD><B>&nbsp;FCMOVB &nbsp;S/ &nbsp;FCMOVNB &nbsp;S</B> 
+    <TD colSpan=2>
+    <TD>&nbsp;přenos, je-li (není-li) menší </TD>
+  <TR>
+    <TD>
+    <TD><B>&nbsp;FCMOVE &nbsp;S/ &nbsp;FCMOVNE &nbsp;S</B> 
+    <TD colSpan=2>
+    <TD>&nbsp;přenos, je-li (není-li) rovno </TD>
+  <TR>
+    <TD>
+    <TD><B>&nbsp;FCMOVBE &nbsp;S/ &nbsp;FCMOVNBE &nbsp;S</B> 
+    <TD colSpan=2>
+    <TD>&nbsp;přenos, je-li (není-li) menší nebo rovno </TD>
+  <TR>
+    <TD>
+    <TD><B>&nbsp;FCMOVU &nbsp;S/ &nbsp;FCMOVNU &nbsp;S</B> 
+    <TD colSpan=2>
+    <TD>&nbsp;přenos, je-li (není-li) "unordered"(?) - &nbsp;nastavuje se v 
+      závislosti na příznacích &nbsp;FPU </TD></TR></TBODY></TABLE>&nbsp; 
+<P><B>&nbsp;Poznámky:</B> 
+<OL type=1>
+  <LI>Není-li specifikován operand D, předpokládá se ST a S musí být operand msr 
+  nebo mlr. Jsou-li specifikovány oba operandy, jsou to ST, ST(i) nebo ST(i), 
+  ST.<BR>Není-li specifikován žádný operand, implicitně jsou ST(1), ST a po 
+  aritmetické operaci nastane posuv v zásobníku inkrementací (pop) a výsledek je 
+  uložen na nový vrchol zásobníku. 
+  <P></P>
+  <LI>Neporovnatelné: C3, C2, C0 = 111<BR>(ST) &gt; S: C3, C2, C0 = 000<BR>(ST) 
+  &lt; S: C3, C2, C0 = 001<BR>(ST) = S: C3, C2, C0 = 100 
+  <P></P>
+  <LI>Neporovnatelné: C3, C2, C0 = 111<BR>(ST) &gt; 0: C3, C2, C0 = 000<BR>(ST) 
+  &lt; 0: C3, C2, C0 = 001<BR>(ST) = 0: C3, C2, C0 = 100 
+  <P></P>
+  <LI>&nbsp; 
+  <TABLE border=0>
+    <COLGROUP>
+    <COLGROUP align=middle span=4>
+    <TBODY>
+    <TR>
+      <TD>(ST) 
+      <TD>C3 
+      <TD>C2 
+      <TD>C1 
+      <TD>C0 </TD>
+    <TR>
+      <TD>+ Unnormal 
+      <TD>0 
+      <TD>0 
+      <TD>0 
+      <TD>0 </TD>
+    <TR>
+      <TD>+ NaN 
+      <TD>0 
+      <TD>0 
+      <TD>0 
+      <TD>1 </TD>
+    <TR>
+      <TD>- Unnormal 
+      <TD>0 
+      <TD>0 
+      <TD>1 
+      <TD>0 </TD>
+    <TR>
+      <TD>- NaN 
+      <TD>0 
+      <TD>0 
+      <TD>1 
+      <TD>1 </TD>
+    <TR>
+      <TD>+ Normal 
+      <TD>0 
+      <TD>1 
+      <TD>0 
+      <TD>0 </TD>
+    <TR>
+      <TD>+ Nekonečno &nbsp; 
+      <TD>0 
+      <TD>1 
+      <TD>0 
+      <TD>1 </TD>
+    <TR>
+      <TD>- Normal 
+      <TD>0 
+      <TD>1 
+      <TD>1 
+      <TD>0 </TD>
+    <TR>
+      <TD>- Nekonečno 
+      <TD>0 
+      <TD>1 
+      <TD>1 
+      <TD>1 </TD>
+    <TR>
+      <TD>+ 0 
+      <TD>1 
+      <TD>0 
+      <TD>0 
+      <TD>0 </TD>
+    <TR>
+      <TD>&nbsp; Prázdný 
+      <TD>1 
+      <TD>0 
+      <TD>0 
+      <TD>1 </TD>
+    <TR>
+      <TD>- 0 
+      <TD>1 
+      <TD>0 
+      <TD>1 
+      <TD>0 </TD>
+    <TR>
+      <TD>&nbsp; Prázdný 
+      <TD>1 
+      <TD>0 
+      <TD>1 
+      <TD>1 </TD>
+    <TR>
+      <TD>+ Denormal 
+      <TD>1 
+      <TD>1 
+      <TD>0 
+      <TD>0 </TD>
+    <TR>
+      <TD>&nbsp; Prázdný 
+      <TD>1 
+      <TD>1 
+      <TD>0 
+      <TD>1 </TD>
+    <TR>
+      <TD>- Denormal 
+      <TD>1 
+      <TD>1 
+      <TD>1 
+      <TD>0 </TD>
+    <TR>
+      <TD>&nbsp; Prázdný 
+      <TD>1 
+      <TD>1 
+      <TD>1 
+      <TD>1 </TD></TR></TBODY></TABLE>
+  <P align=justify>Kde číslo typu <B>Normal</B> je normalizované a vyhovuje 
+  formátu. Číslo typu <B>Denormal</B> vzniká podtečením, kdy exponent vychází 
+  menší (algebraicky), než připouští formát. Číslo typu <B>Unnormal</B> může 
+  vzniknout z <B>Denormal</B> a má exponent v žádoucím rozsahu, ale mantisu 
+  menší než 1. Při použití čísla <B>Unnormal</B> v další operaci ještě může 
+  vzniknout správný výsledek typu <B>Normal</B>. Výsledek typu <B>NaN</B> (Not a 
+  Number) má speciální význam a existuje jen ve formátech real. Má v exponentu 
+  jen jedničky, má znaménko a libovolnou mantisu s výjimkou hodnoty 1,00 ... 0B, 
+  která je vyhrazena pro <B>Nekonečno</B>. Použití <B>NaN</B> je popsáno v 
+  uživatelském manuálu k iAPX86, 88 vydaném společností INTEL v roce 1977. 
+  </P></LI></OL></A></BODY></HTML>

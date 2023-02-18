@@ -1,0 +1,649 @@
+<html>
+<title>Dokumentace k projektu Nothing</title>
+<body>
+<br>
+<a name="#main">
+<center><h1>Nothing OS<br>Dokumentační projekt</h1></center>
+<br>
+<Obsah:
+<br>
+<a href="#uvod">Úvod</a><br>
+<a href="#protect">Protected Mode</a><br>
+<a href="#vlastnosti">Popis Nothing OS</a><br>
+<a href="#zdroje">Použité zdroje informací</a><br>
+<a href="#tools">Programy přiložené k dokumentaci</a><br>
+<a href="#credits">Credits</a><br>
+<br>
+<h3>Detailní popis vlastností a funkcí</h3>
+<a href="#mm">Memory Managment</a><br>
+<a href="#tm">Task Managment</a><br>
+<a href="#vfs">Virtual File System (VFS)</a><br>
+<a href="#ext2">Extended File system 2 (EXT2)</a><br>
+<a href="#libs">Libraries</a><br>
+<a href="#drvs">Drivers</a><br>
+<a href="#prg">Programs</a><br>
+<br>
+<hr>
+<a name="#uvod">
+<font size=4><b>Úvod</b></font>
+<p>Jedná se o 32-bitový víceuživatelský multitaskingový operační systém. Vycházeli jsme z toho, 
+že nebudeme používat standardní služby BIOSu a vše si uděláme sami, což jsme dodrželi a s hardwarem počítače komunikujeme
+pouze pomocí portů.</p>
+<p><b>Historie:</b> Vývoj započal <b>14.9.2000</b>.
+<ul type="disc">
+ <li>Verze <b>v1.0</b>, je první a byla postavena na kostře programu, který se spouštěl z MS-DOSu
+jako normální program, po spuštění se přepl do protected modu a nakonec zpět do real modu a DOSu.Zde se odladili rutiny
+pro práci s ATA zařízeními a ASCII klávesnicí a hlavně Memory Managment.<br>
+ <li>Verze <b>v1.1</b> se datuje ke dni <b>10.10.2000</b>. Tato verze již byla spouštěna ze své vlastní partition, pomocí BootLoaderu jménem <a href="#prg2">OSLO</a>.
+Obsahovala rutiny pro práci s diskem a klávesnicí.Tato verze byla revoluční ve svém skoku ze spouštění z příkazové řádky na
+zavádění pomocí OSLA, boot loaderu.<br>
+ <li>Verze <b>v1.2</b> je ještě více revoluční než <b>v1.1</b>, protože jsme zde implementovali obrovskou spoustu věcí, jako je práce s drivery a knihovnami, 
+které mohli být jak interní(virtuální), tak díky rutinám pro práci s diskem a s EXT2 FS i externí.
+ <li>Verze <b>v1.3</b> je hodně rozvinutá verze <b>v1.2</b> a byla přidána detekce procesoru, přerušení pro volání systémových funkcí, byl rozvinut systém
+virtuálních knihoven a DELAY rutin.
+ <li>Verze <b>v1.4</b> vznikla spontánně nedopatřením:) dne <b>18.2.2001</b>.V ní je již implementován přístup k datovým zařízením(disk,...) skrze pamět, 
+byly položeny základy pro spouštění programů, Virtual file systému, a vše ostatní se tomu přizpůsobilo, ať už je to práce s drivery, knihovnami či
+celý memory managment. Dále byly přidány rutiny pro práci s CMOS.
+ <li>Verze <b>v1.5</b> vznikla <b>23.3.2001</b>, je to již plně funkční beta verze Nothing OS, funguje již 10 konzolí, spouštění programů, vytváření zařízení, což je jen jeden krůček před zápisem do souboru, jsou
+hotovy první programy, interpret příkazového řádku <a href="#prg">Nosh</a>, program na výpis všech spuštěných procesů <a href="#prg">Ps</a>, a program na vytvoření zařízení <a href="#prg">Mknod</a>
+</ul>
+</p>
+<p align=right><a href="#main">Back</a></p>
+<hr>
+<a name="#Protect">
+<font size=4><b>Popis základních vlastností Protected Mode</b></font>
+<p>
+<UL>
+<LI><B>Přístup k paměti: </B> Adresování paměti v Protected Mode je poněkud složitější než v real mode. Každý přístupný blok paměti v Protected Modu musí být
+popsán descriptorem. Tato osmi bytová struktura přesně popisuje začátek bloku paměti (bázová adresa), délku oblasti, práva přístupu k tomuto bloku, a dále pak informační bity, 
+které definují mod adresování v paměti, typ paměti (datový descriptor, kódový descriptor,...), a hlavně pak obsahuje bit P(present), určující, je-li descriptor
+přístupný. V této části popisu Protected Modu se budeme zabývat pouze bitem P, limitem a bázovou adresou descriptoru. Descriptory můžou být uloženy ve dvou tabulkách :
+v Tabulka globálních descriptorů (GDT), a v Tabulce lokálních descriptorů(LDT). Rozdíl mezi těmito tabulkami je v tom, že GDT je viditelná vždy ze všech procesů, LDT může
+pak mít každý proces individuální. Segmentová část adresy (v protected modu označována jako Selector) obsahuje tři pole. Jedno nazývané RPL(CPL) definuje práva selektoru, druhé pole
+specifikuje tabulku descriptorů, ve které se má descriptor hledat a třetí pole obsahuje samotnou datovou informaci selektoru. Při adresování paměti pak selektor adresy nedefinuje 
+přímo část lineární paměti, jak to známe z Real Mode, ale ukazuje do jedné z tabulek descriptorů. Například při provádění instrukce  "mov eax, dword ptr 10h:[10214h]" procesor vezme segmentovou část 
+adresy, tzn. hodnotu deset hexa,a použije ji jako index do tabulky GDT. Z ní zjistí bázovou adresu descriptoru 10h (například 100000h), připočítá k ní offsetovou hodnotu 10214h, a navrátí hodnotu 
+z doublewordu z fyzické adresy 110214h. Situace se poněkud zkomplikuje, zapneme-li mechanismus stránkování. Celý proces překladu adresy zpočátku provede stejnou rutinu, jakmile však zjistí lineární
+adresu 110214h, nepoužije jí jako adresu fyzickou, ale jako index do struktury stránkování. Teprve na doublewordu v této struktuře se nachází adresa fyzické paměti, odkud chceme
+číst. Mechanismus stránkování byl v procesorech Intel implementován až od procesoru 80386, což je také jediný důvod, proč OS Nothing nedokáže pracovat na procesorech starších 
+verzí. Překlad stránek vypadá na první pohled poněkud složitě, a neužitečný. Je to však jediný způsob, jak adresovat vetší velikost virtuální paměti, než jak je veliká pamět fyzická.
+Navíc, což je jedna z nejužitečnějších vlastností stránkování je fakt, že i když descriptor ukazuje na blok paměti o velikosti 40MB, neznamená to, že v paměti musí být tento
+blok souvislý. Pomocí mechanismu stránkování může jeden descriptor v jednu chvíli používat stránky z libovolné části fyzické paměti.
+Dále pak stránkování paměti zjednodušuje mechanismus virtualizace paměti(emulace fyzické paměti pomocí velkokapacitních blokových zařízení typu HD, SCSII,...)
+<BR><BR>Protected Mode umožňuje dva způsoby <b>virtualizace paměti</b> :
+ <UL type="disc">
+ <LI>Způsob první se musí použít v případě, kdy není zapnut mechanismus stránkování. Jedná se o virtualizaci descriptorů. Využívá se bitu P v descriptoru. Přistoupí-li se totiž
+     k descriptoru, jehož bit P je nastaven na nulu, vyvolá se vyjímka procesoru. Obsluha této vyjímky by pak měla najít v paměti nejméně používaný descriptor s nastaveným
+     bitem P, obsah paměti tohoto descriptoru uložit na velkokapacitní swapovací zařízení, a uvolněnou pamět přiřadit descriptoru, který vyvolal přístupem do paměti vyjímku
+     procesoru. Samozřejmě že obsluha vyjímky musí zajistit, aby se v do této nově uvolněné paměti nakopírovala data, která jsou uložená ve swapovacím prostoru. Tento způsob
+     virtualizace paměti může mít využití u jednoduchých procesů, které mají malé descriptory. Při větší velikosti descriptorů by ukládání a obnovování tak velkých dat z 
+     blokových zařízení bylo neúnosně pomalé. Tento princip virtualizace neumožňuje ani alokaci většího bloku paměti než jak je velká fyzická pamět. Systém Nothing OS používal
+     tuto virtualizaci do verze 1.1
+ </LI>
+ <BR><BR>
+ <LI>Virtualizace paměti pomocí stránkovacího mechanismu mnohem více efektivnější než způsob první. Princip je podobný, rozdíl je ten, že se netestuje bit P u celého descriptoru,
+     ale bit se stejným významem uložený u každé 4k stránky ve struktuře stránkování. Při přístupu ke stránce, která má bit P nastaven na nule se nahraje z velkokapacitního zařízení
+     pouze jedna stránka, nemusí se nahrávat celý descriptor. Systém Nothing využívá mechanismu stránkování nejenom k virtualizaci paměti, ale i v dalších situacích.
+     Systém Nothing OS v1.2 jako první obsahuje stránkovací mechanismy, verze 1.3 obsahuje plnou implementaci alokace paměti pomocí vyjímky procesoru, verze 1.4 pak rozšířila obsluhu
+     vyjímky procesoru na načítání stránek ze souboru, čímž jsme dosáhli situace, kdy pouhé čtení/zápis do paměti pracuje přímo se soubory uloženými na disku.
+ </LI>    
+ </UL>
+</LI>
+<BR><BR>
+<LI><B>Mechanismy ochrany: </B> jedná se vlastně o předpisy diktované Intelem, které specifikují přístupová práva k paměti, k IO zařízením,... 
+   <UL type="disc">   
+   <LI>Práva k <B>přístupu k paměti</b> testuje procesor na dvou úrovních. První úroveň je porovnávání práv descriptoru s právem uloženým v selektoru na descriptor. V descriptoru je pole DPL
+   (Descriptor Privileg Level), určující maximální možnou hodnotu RPL(nebo CPL)selektoru. Je-li například v DPL descriptoru hodnota 0, a v selektoru na tento descriptor je pole
+   RPL s hodnotou 3, pak jakýkoliv přístup k paměti pomocí tohoto descriptoru vyvolá vyjímku procesoru #GP. CPL procesu je jiný název pole RPL v selektoru, používaný v kódových 
+   descriptorech(Registr CS). Programy nemají právo přímo měnit své CPL. Při přístupu k paměti se pak testuje i CPL procesu, a je-li RPL datového selektoru numericky vyšší než CPL 
+   kódového selektoru, vyvolá se opět vyjímka #GP. Program, který může změnit RPL datového selektoru na nulu, nemůže přesto k descriptoru s DPL=0 přistoupit, protože přes kontrolu 
+   práv přístupu neprojde jeho CPL. Pokud je zapnuto stránkování, uvedou se v pohyb ještě předpisy pro přístup ke stránkám. V těch je situace jednodušší, jeden bit specifikuje, zda 
+   je stránka přístupná jen pro CPL 0, nebo pro všechny ostatní CPL. Operační systémy mají tedy na výběr ze tří možností, jak ochraňovat důležité oblasti paměti před zásahem, buďto 
+   využijí pouze testování práv přístupu descriptorů, testování přístupových práv stránkovacího mechanismu, nebo kombinované. Systém Nothing OS využívá kombinovanou ochranu přístupu.    
+   Další test při přístupu k paměti je testování limitu descriptoru. Je-li offset vetší než limit descriptoru, pak #GP. Při tomto testu se uplatňuje bit G descriptoru, který specifikuje
+   velikost limitu. Pole limit má pouze 20bitů, to by znamenalo, že může být maximálně segment o velikosti 1MB. Bit G(Granularity) specifikuje velikost limitu ve 4k stránkách minus jedna.
+   Potom je-li limit descriptoru nastaven na hodnotu 4, znamená to délku segmentu dvacet kilo((4+1)*4). 
+   </LI>
+   <BR><BR>
+   <LI>Další testování práv vznikne v okamžiku pokusu o <b>změnu registru CS</b>. Zde je situace poněkud nepřehledná. První test zjistí, zda-li cílový descriptor je typu Code.
+   Dalším testem procesor porovná RPL cílového selektoru s naším CPL. Není-li nastaven bit Conforming v cílovém descriptoru, následuje test CPL, to musí být rovno DPL cílového descriptoru.
+   Projdeme-li všemi testy, pak se instrukce vykoná, jinak vznikne vyjímka procesoru #GP. Tento způsob dovoluje sice změnu CPL, ale pouze v případě, je-li Conforming bit nastaven.
+   Tento způsob však dovoluje procesům s CPL 3 skočit do libovolného místa CPL 0 descriptoru, tedy i do místa, které je potencionálně nebezpečné. Proto v OS Nothing neexistují descriptory
+   s nastaveným Conforming bitem. K přepínání CPL při volání systémových volání využíváme další možnost Protected Modu - Call Gates. Jedná se o speciální typ descriptoru, který nepopisuje
+   pamět, ale přesně definuje vstupní bod do kódových descriptorů. Pole Base v Call Gate descriptoru specifikuje selektor na Code segment, pole Limit pak offset. Provede-li proces instrukci
+   skoku nebo volání a selektoru připadne descriptor na Call Gate, pak provedou testy práv přístupu ke Call Gate, a vyjde-li proces z těchto testů vítězně, provede se skok na 
+   adresu "selector:offset" přesně definovanou v Call Gate descriptoru. U práv přístupu ke Call Gate se rozlišuje instrukce CALL a instrukce JMP. Provádí-li se instrukce Call,
+   pak CPL současného procesu a RPL cílového procesu musí být menší nebo rovno DPL call gateu, DPL cílového descriptoru musí být menší nebo rovno CPL. Provádí-li se instrukce JMP,
+   pak CPL současného procesu a RPL cílového procesu musí být menší nebo rovno DPL call gateu, je-li cílový descriptor conforming,potom DPL cílového descriptoru musí být menší nebo 
+   rovno CPL. Není-li cílový descriptor conforming, pak DPL cílového descriptoru musí být rovno CPL.    
+   </LI>
+   <BR><BR>
+   <LI>Procesor dále testuje práva k provedení <b>privilegovaných instrukcí</b> Protected Modu. Zde je situace jednoduchá - pouze proces s CPL 0 má právo provádět privilegované instrukce.
+   Jsou to :  
+ 	<UL type="disc">
+ 	<LI>LGDT - uložení do registru GDT ukazatel do paměti, kde se nachází GDT</LI> 
+ 	<LI>LLDT - uložení do registru LDT ukazatel do paměti, kde se nachází LDT</LI> 
+ 	<LI>LTR  - uložení do registru TR ukazatel do paměti, kde se nachází současný TSS segment</LI> 
+ 	<LI>LIDT - uložení do registru IDT ukazatel do paměti, kde se nachází IDT - interrupt descriptor table</LI> 
+ 	<LI>MOV CRx,DRx - zápis do kontrolních a debugovacích registrů</LI> 
+ 	<LI>LMSW - uložení do registru MSW "machine status word" novou hodnotu</LI> 
+ 	<LI>CLTS - vymazání Task Switch bitu z CR0</LI> 
+ 	<LI>INVD - odstranění dat z cache paměti</LI>
+ 	<LI>WBINVD - odstranění dat z cache paměti, se zpětným zápisem dat do paměti.</LI>
+ 	<LI>INVPLG - invalidování TLB záznamu (nutno provést po přemapování pages)</LI>
+ 	<LI>HLT - zastavení procesoru</LI>
+ 	<LI>RDMSR - čtení Model-Specific registru</LI>
+ 	<LI>WRMSR - zápis do Model-Specific registru</LI>
+ 	<LI>RDPMC - čtení z registru Performance Monitor</LI>
+ 	<LI>RDTSC - čtení z registru Time-Stamp Counter</LI> 		
+ 	</UL>      
+   </LI>
+   <BR><BR>
+   <LI>Velice nepěkná zlá věc je <B>"checking aligment"</B>. Tady si intel opětovně hrál na bohy, a vymyslel dokonalost samu - testování zarovnání dat. Je-li nastaven bit AM v registru CR0,
+       pak jakýkoliv přístup k datům, které nejsou zarovnány na násobek 2 vyvolá vyjímku #AC. Jelikož je systém Nothing zásadně proti diktování nesmyslných pravidel, je a nadále
+       zůstane tato funkce nepodporována. Amen.
+   </LI>
+   <BR><BR>
+   <LI>Protected Mod také testuje práva procesu k přístupu k <b>I/O zařízením</b>. V EFLAGS registru je dvoubitové pole IOPL, které specifikuje maximální hodnotu CPL, která má právo přistupovat
+   k libovolnému portu. Je-li hodnota CPL vetší (normální procesy), pak při přístupu k portu procesor zkontroluje bitmapu uloženou v TSS segmentu. Každý bit této mapy definuje, má-li proces právo
+   k přístupu na daný port. Jako obvykle, nemá-li proces práva přístupu k portu, vyvolá se #GP. Systém NothingOS nepovoluje přístup k žádnému portu. Proces musí pro přístup k portům použít
+   modulů jádra.</LI>
+   <BR><BR>
+   <LI>Procesy mají k dispozici několik instrukcí protected modu, jejichž použitím předejdou případnému #GP. Jsou to instrukce :
+   	<UL type="disc">
+ 	<LI>LAR - testování přístupových práv</LI> 
+ 	<LI>VERR - testování práv čtení z descriptoru - použitelné u Code descriptorů, které mohou mít zakázané čtení</LI> 
+ 	<LI>VERW - testování práv zápisu - descriptory mohou být Read Only</LI> 
+ 	<LI>LSL - zjištění délky descriptoru (v bytech, nezáleží na bitu Granularity descriptoru)</LI> 
+ 	<LI>ARPL - zjištění práv RPL při změně codového registru</LI> 	
+ 	</UL>      
+   </LI>   
+   </UL>
+   <br>
+<LI><B>Přepínání procesů: </B> Protected Mód obsahuje plnou hardwarovou podporu přepínání procesů. Definuje nový typ descriptoru - TSS descriptor (Task Status Segment). V datové oblasti, kam ukazuje 
+    bázová adresa descriptoru je 96byte reservováno pro ukládání stavu procesoru. Přepínání procesů probíhá provedením instrukce JMP nebo CALL a selektoru připadne descriptor TSS. V tuto chvíli se uloží stav procesoru(registry), nastaví se registry podle nového tasku a 
+    přepne se na něj. Pokud tuhle činnost zacyklíte, čili pokud si uděláte dva prográmky, které budou volat jeden druhého, vytvoříte si tím primitivní multitasking. Trochu složitější, ale jistě účinnější přepínání tásků, které samozřejmě používá NothingOS,
+    je pomocí tzv. task managera, který se povětšinou zavěsí na časovač a pak "spravedlivě" přiděluje procesorový čas jednotlivým táskům, tím že přepíná jeden po druhém podle toho jaké mají priority. Vyvolání samotného task manageru je zajištěno
+    pomocí přerušení IRQ časovače. Stejně jako všude jinde, i v této oblasti existence vytvořil Intel testování práv. Při provádění instrukce skoku nebo volání kontroluje procesor CPL právě běžícího procesu s DPL TSS segmentu. Je-li CPL numericky menší nebo rovno, pak 
+    je přepnutí tasku povoleno. V systému NothingOS mají všechny TSS segmenty DPL0, proto žádný task nemůže sám provést přepnutí tasků.   
+</LI>
+<BR><BR>
+<LI><B>Přerušovací systém: </B> přerušovací systém je v protected modu značně zkomplikovaný. Neexistuje tady tabulka vektorů jako v Real Modu, ale Tabulka Přerušovacích Descriptorů (IDT),která může být uložena kdekoliv v paměti. V této tabulce se pak mohou nacházet descriptory
+    které definují vstupní bod přerušovací rutiny. Descriptory nemohou být datové, kódové nebo TSS. Jakékoliv zavolání přerušení, jehož descriptor v IDT obsahuje některý z těchto typů descriptorů vyvolá #GP. Je možnost sem dát pouze descriptory Call Gate, Interrupt Gate či Trap Gate. 
+    Protože vznikla nutnost přepínat procesy pomocí časovače, přidal Intel k těmto typům descriptoru další typ - TSS Gate. Tato brána pro přepínání procesů se chová úplně stejně jako TSS descriptor, jedinou změnou je tu možnost umístit ho právě do IDT.
+    <BR><B>Intel si rezervoval některé přerušení : </B>
+    <BR><BR>
+<TABLE border="1" Align="Center">
+<TR><TD><B>Číslo přerušení</B><TD><B>Značka</B><TD><B>Název</B><TD><B>Typ</B><TD><B>Error Code</B></TR>
+<TR><TD Align="Center">00h<TD Align="Center">#DE<TD>Dělení nulou<TD Align="Center">fault<TD Align="Center">ne</TR>
+<TR><TD Align="Center">01h<TD Align="Center">#DB<TD>Debug<TD Align="Center">trap<TD Align="Center">ne</TR>
+<TR><TD Align="Center">02h<TD Align="Center">&nbsp;<TD>Nemaskovatelné přerušení<TD Align="Center">interrupt<TD Align="Center">ne</TR>
+<TR><TD Align="Center">03h<TD Align="Center">#BP<TD>Breakpoint<TD Align="Center">trap<TD Align="Center">ne</TR>
+<TR><TD Align="Center">04h<TD Align="Center">#OF<TD>Overflow<TD Align="Center">trap<TD Align="Center">ne</TR>
+<TR><TD Align="Center">05h<TD Align="Center">#BR<TD>Přetečení instrukce BOUND<TD Align="Center">fault<TD Align="Center">ne</TR>
+<TR><TD Align="Center">06h<TD Align="Center">#UD<TD>Neznámý opcode<TD Align="Center">fault<TD Align="Center">ne</TR>
+<TR><TD Align="Center">07h<TD Align="Center">#NM<TD>Matematický koprocesor nepřipraven<TD Align="Center">fault<TD Align="Center">ne</TR>
+<TR><TD Align="Center">08h<TD Align="Center">#DF<TD>Double Fault<TD Align="Center">abort<TD Align="Center">ano</TR>
+<TR><TD Align="Center">09h<TD Align="Center">&nbsp;<TD>Přetečení koprocesoru<TD Align="Center">fault<TD Align="Center">na</TR>
+<TR><TD Align="Center">0Ah<TD Align="Center">#TS<TD>Chybný TSS segment<TD Align="Center">fault<TD Align="Center">ano</TR>
+<TR><TD Align="Center">0Bh<TD Align="Center">#NP<TD>Segment nepřítomen (descriptorová virtualizace)<TD Align="Center">fault<TD Align="Center">ano</TR>
+<TR><TD Align="Center">0Ch<TD Align="Center">#SS<TD>Chyba při přístupu k zásobníku<TD Align="Center">fault<TD Align="Center">ano</TR>
+<TR><TD Align="Center">0Dh<TD Align="Center">#GP<TD>Obecná chyba ochrany<TD Align="Center">fault<TD Align="Center">ano</TR>
+<TR><TD Align="Center">0Eh<TD Align="Center">#PF<TD>Stránka nepřítomna (stránková virtualizace)<TD Align="Center">fault<TD Align="Center">ano</TR>
+<TR><TD Align="Center">0Fh<TD Align="Center">&nbsp;<TD>Reservováno Intelem<TD Align="Center">&nbsp;<TD Align="Center">&nbsp;</TR>
+<TR><TD Align="Center">10h<TD Align="Center">#MF<TD>Chyba koprocesoru<TD Align="Center">fault<TD Align="Center">ne</TR>
+<TR><TD Align="Center">11h<TD Align="Center">#AC<TD>Chyba zarovnávání dat<TD Align="Center">fault<TD Align="Center">ano</TR>
+<TR><TD Align="Center">12h<TD Align="Center">#MC<TD>Chyba při autotestu procesoru<TD Align="Center">abort<TD Align="Center">ne</TR>
+<TR><TD Align="Center">13h<TD Align="Center">#XF<TD>Chyba při práci s SIMD instrukcemi<TD Align="Center">interrupt<TD Align="Center">ne</TR>
+</TABLE>	
+<BR>
+<BR>Jak je vidět z tabulky, existují čtyři typy přerušení :
+	<UL type="disc">
+ 	<LI><B>Fault</B> je vyjímka procesoru. Po návratu z přerušení se dostaneme zpátky na instrukci, která přerušení vyvolala. Přerušení typu fault je třeba #PF, který je vyvolán při přístupu ke stránce která není ve fyzické paměti.</LI> 
+ 	<LI><B>Trap</B> je vyjímka procesoru, která se vyvolá až po vykonání instrukce, která ji zapříčinila. Příkladem trapování je debug</LI> 
+ 	<LI><B>Abort</B> vyjímka procesoru, ze které není návrat zpět. Vykoná-li program instrukci, která zapříčinila Abort, program už nikdy nedostane kontrolu. </LI> 
+ 	<LI><B>Interrupt</B> je klasický typ přerušení, známý z Real Modu</LI>  	
+ 	</UL>       
+ <BR>		        
+    Některá přerušení také obsahují Error Code - je to Doubleword, uložený na zásobníku při vyvolání vyjímky. Obsluha přerušení se musí postarat o jeho odstranění ze zásobníku, jinak se při návratu vyvolá vyjímka ve vyjímce (v některých situacích
+    dojde dokonce k resetu počítače).
+<BR><BR>Nevím, kdy kde nebo proč, ale když si Intel vybíral přerušení, musel si vybrat přesně ty, na které jsou po spuštění počítače implicitně namapované IRQ. Proto každý program, který chce v Protected Modu pracovat s IRQ signály, musí 
+	přemapovat IRQ na nové INT, pomocí řadiče přerušení. Systém NothingOS mapuje IRQ na přerušení 0F0h..0FFh.
+<BR><BR>Fantóm <b>"Tripplefault"</b> - Tripple fault je trojitá vyjímka. Jakmile vznikne, procesor se automaticky resetuje. Jeden z mnoha způsobů, jak vytvořit tripple fault je přemapování registru SS na neexistující descriptor (pouze CPL 0). Při 
+        prvním přístupu k zásobníku se vyvolá vyjímka #SS (1), protože však stack ukazuje na neexistující descriptor, při vyvolávání Stack Faultu se vyvolá #GP (2), který se však opět nespustí, protože se ze stejného důvodu vyvolá opět #SS (3). A je
+        na světě tripplefault... v tuto chvíli již počítač znovu bootuje.....
+</LI>
+</UL>
+To by byl hrubý popis vlastností Protected Modu, pro přesnější informace <a href="./docs/24319202.PDF">Intel architecture software denveloper's manual: Vol.3 System programming</a>
+</p>
+<p align=right><a href="#main">Back</a></p>
+<hr>
+<a name="#vlastnosti">
+<font size=4><b>Popis Nothing OS</b></font>
+<p><b>Celkové shrnutí:</b> V Nothing OS v1.5 je zahrnut Memory Managment, který plně využívá možností Protected Módu, Task Managment,
+práce s Drivery a Knihovnami, které mohou být jak virtuální(Interní) tak externí(uložené v souboru na disku), Virtual File system(podporující namountování dalších zařízení či disků, neomezené množství FS), podpora
+našeho mateřského FS EXT2, máme vlastní spustitelný formát EBF(Executable Binary File), interpret příkazového řádku <a href="#prg">Nosh</a>, program na vypsání všech běžících procesů <a href="#prg">Ps</a> a též je hotový program, který vytvoří soubor, který zastupuje jakékoliv zařízení, <a href="#prg">Mknod</a> . 
+Nothing OS, je vyjímečný tím, že bezpečnost systému je zabezpečena více hardwarově než softwarově, ale dohromady to dává solidní bezpečnost:)</p>
+<p align=right><a href="#main">Back</a></p>
+<hr>
+<center><h2>Detailní popis vlastností a funkcí</h2></center>
+<a name="#mm">
+<font size=4><b>Memory Managment</b></font>
+<p><b>Základní charakteristika: </b> Operační systém Nothing využívá všech možností Protected módu, včetně virtualizace paměti. Každý proces má přístup ke 4 GB virtuální paměti, přičemž ta je rozdělena na sdílenou a privátní. Spodní 3 GB paměti jsou sdílené, každý proces k ní má přístup. Zde se nachází kód kernelu, externích knihoven, driverů a souborů mapovaných do paměti. V posledním 1 GB paměti 
+má každý proces soukromé datové struktury, k nimž má přístup pouze on (a kernel). </P>
+<P>
+<b>Virtualizace paměti:	</b> Protože proces má přístup ke 4 GB paměti, musí kernel obsahovat rutiny pro virtualizaci pamětí. Přistoupí-li proces do prostoru paměti za hranicí fyzické paměti vyvolá se vyjímka procesoru, která zajistí swapnutí (uložení) obsahu fyzické části paměti na HD a uvolněnou paměť přemapuje na místo ve virtuální paměti, kam proces přistoupil.
+Při dalším přístupu k paměti uložené na disku se opět pokusíme část fyzické paměti uvolnit a na její místo načteme z disku původní data. Při dostatečné velikosti Swap Partition může takto proces bez problémů zpracovávat větší objem dat, než je velikost fyzické paměti. Přestože maximální velikost paměti, ke které má jeden každý proces přístup je 4GB, pomocí virtualizace
+privátních oblastí virtuální paměti umožňuje systém přístup k (3+n)GB virtuální paměti, kde "n" je počet právě spuštěných procesů.
+</p>
+<P>
+<b>Vynucené stránkování: </b> Princip virtualizace paměti využívá dále kernel při mapování souboru do paměti (vynucené stránkování). Principielně se jedná o to, že se část virtuální paměti prohlásí za Memory Mapped Area, jakýkoliv přístup k této paměti pak vyvolá vyjímku procesoru, která zajistí načtení části souboru do paměti. Chceme-li potom přečíst libovolnou část souboru 
+stačí nám číst z paměti, kernel sám zajistí aby v paměti byl skutečný obraz souboru. Mapování souborů do sdílené paměti navíc systém Nohting umožňuje přístup k souboru všem procesům, které chtějí s daným souborem pracovat, předchází tak potencionálnímu plýtvání pamětí, kdy by se v různých částech paměti vícekrát objevily stejné fragmenty souborů.
+</P>
+<P>
+<b>Alokace a dealokace paměti: </b> Paměť se alokuje pouhým vyčleněním části paměti. Při prvním přístupu k tomuto bloku paměti se opět vyvolá vyjímka procesoru, která zajistí přidělení části fyzické paměti tomuto bloku. Alokuje-li si proces například virtuální paměť o velikosti 10 MB a zapíše pouze do 1 Byte této paměti, přidělí se mu pouze 4 kB místo 10 MB. Dealokace 
+paměti probíhá poněkud zvláštním způsobem. Paměť, která se má dealokovat, se pouze označí jako nepoužitá, nadále však zůstává ve fyzické části paměti (je používána jako cache paměť). Jakmile velikost volné fyzické paměti systému překročí hranici 80-ti % celkové velikosti, spustí se Swap Deamon, část kódu kernelu, která se postará o uvolnění nepoužívaných, dříve již 
+dealokovaných částí paměti. Není-li ani po jejich uvolnění v systému dostatečné množství fyzické paměti, Swap Daemon se pokusí část nejméně používané paměti uložit na Swap Partition.
+</P>
+<p>
+<b>Ochrana sdílené paměti: </b> Protože sdílená pamět se nachází v adresovacích prostorech všech procesů, musí existovat mechanismus pro její ochranu. Systém Nothing v tomto ohledu spoléhá na ochranu na úrovni hardwaru. Ve sdílené paměti se veškerá pamět alokuje s právem přístupu 0, tzn. pouze kernel a moduly jádra k nim mají přímí přístup. Jakýkoliv pokus o přístup ze
+strany procesu vyvolá vyjímku procesoru 0Dh - General Protection Fault, která se postará o "zajištění procesu". Procesy, chtějí-li přistupovat ke sdílené paměti, musí zavolat rutiny kernelu, které uváží práva procesu k přístupu k dané části paměti. Je-li proces uznán způsobilým k přístupu k paměti, kernel vytvoří v privátním adresovacím prostoru procesu kopii paměťového
+bloku ze sdílené paměti, s právy přístupu 3. K tomuto "aliasu sdílené paměti" pak může proces přistupovat bez obav z potrestání.
+</p>
+<p align=right><a href="#main">Back</a></p>
+<hr>
+<a name="#tm">
+<font size=4><b>Task Managment</b></font>
+<p><b>Obecný popis: </b>Systém Nothing je plně multitaskingový, umožňuje "současný" běh až 512 procesů. Protože systém běží na jednoprocesorovém počítači, není možné, aby dva procesy běžely skutečně v jeden okamžik. Procesy se sekvenčně spouštějí v krátkých intervalech (200Hz), tím vzniká dojem současného běhu více úloh. Při každém přepnutí úloh Protected Mode automaticky uloží stav registru procesoru
+do TSS (Task State Segment) struktury, která jediná musí být pro každý proces jedinečná. Systém Nothing rozšířil standardní rozložení TSS segmentu, přidal datové struktury pro uložení stavu registrů matematického koprocesoru, dále pak do TSS segmentu ukládá různé informace o daném procesu (jméno procesu, VFS inody standardních vstupů/výstupů,...) Všechny položky
+rozšiřující struktury TSS neukládá procesor automaticky, při přepínání tásků se o jejich uložení musí starat OS. Pro přesnou strukturu TSS segmentu viz <a href="./source/inc/data/tskdata.inc">"source\inc\data\tskdata.inc"</a></p>
+<p><b>Stavy procesů :</b> Systém Nothing se snaží optimalizovat přístup procesů ke zdrojům, v tomto případě využívání času procesoru. Z tohoto důvodu existují v systému několik stavů procesů.
+<UL>
+<LI><B>Run</B> procesy s tímto statusem jsou plánovačem úloh pravidelně spouštěny</LI></TR>
+<LI><B>Stopped</B> procesy s tímto statusem jsou zastaveny, plánovač úloh je nespouští. Proces se implicitně přepne do tohoto stavu v případě, spustí-li další proces jako synovský task. Při ukončení procesu systém Nothing ověří, zda existuje rodičovský task pro daný proces. Při nalezení rodičovského procesu se tento proces automaticky přepne do stavu <b>run</b>. </LI>
+<LI><B>Sleep</B> tento stav procesu je využíván pro synchronizaci procesů. Při přístupu k externím zařízením, popřípadě při meziprocesové komunikaci nastávají situace, kdy proces čeká na vstupní data. V tomto okamžiku je proces automaticky přepnut do stavu <b>sleep</b>, proces není nadále zařazován plánovačem úloh do fronty spouštěných procesů. Jakmile přijdou data, na které proces čeká,
+je mu zaslán signál, který proces automaticky přepne do stavu <b>run</b>, a proces tak může dokončit práci. Krásným příkladem uspávání procesů je čekání na stisk klávesy - pokud není v bufferu klávesnice žádný znak, proces je uspán. Jakmile je stisknuta klávesa, proces se probudí a přečte z bufferu kód klávesy.</LI>
+<LI><B>Immortable</B> neboli nesmrtelný proces. Proces není nikdy ukončen, běží navždy. Může být kdykoliv přepnut do stavů <b>stopped</b> či <b>sleep</b>, nikdy však do stavu zoombie</LI>
+<LI><b>Zoombie</B> systém definuje stav procesu zoombie jako ukončený proces, jehož datové struktury jsou nadále umístěny ve virtuální paměti. Proces ve stavu Zoombie lze oživit. V systému je uložena hodnota "Max_Zoombies", která určuje, kolik může být v mrtvých procesů. Jakmile se ukončí proces (přepne se do stavu zoombie), zkontroluje se počet mrtvých tasků, je-li jich více než "Max_Zoombies",
+automaticky se nejstarší task se statusem zoombie ukončí. Teprve v tuto chvíli je uvolněná paměť, kterou proces používal, a je dostupná k alokaci</LI>
+</UL>
+</p>
+<p><b>Plánovač úloh: </b> Každý proces v systému má prioritu spuštění, číslo v intervalu od <1..32> Tuto hodnotu používá systém při plánování spouštění procesů. Je to vlastně přímá hodnota časového kvanta, zvaná "jiggies". Sečtou se priority všech procesů ve stavu run a immortable, čímž získáme velikost jednoho cyklu přepínání procesů. Každý proces bude během tohoto cyklu spuštěn tolikrát, jakou hodnotu má priorita. Vytvoří se
+pole o velikosti součtu všech priorit (= rozložení spouštění tasků), a do něho se umístí PID (Process Identification) všech běžících procesů. Systém se snaží rozmístit PID do pole rovnoměrně.
+Systém Nothing vytvoří jednorázově rozložení spouštění tasků při spouštění procesu a při ukončování procesu ve stavu zoombie. Přepne-li se task do stavu stopped nebo sleep, zůstává proces nadále v rozložení procesů, jenom se na ně nepřepíná kontrola. Při probuzení 
+procesů tak nemusíme znovu předělávat rozložení spouštění procesů.</p>
+<p><b>Rodiny procesů: </b> Žádný proces nemůže být spuštěn samostatně, bez příslušnosti k určité rodině procesů. Rodiny procesů začínají vždy u programu <b>init</b> Proces může být spuštěn buďto jako synovský proces, nebo jako bratr. Při jakémkoliv modu spuštění se do informaci o rodičovském (bratrovském) procesu uloží odkaz na nově vzniklý proces, a obráceně do informací o novém procesu se uloží odkaz na task, který ho spustil. 
+Tím vzniká hierarchie procesů, potřebná pro kontrolování práv akcí jednotlivých procesů. Proces nemá například právo zabít proces z jiné rodiny tasků, má však právo zabít člena z vlastní hierarchistické struktury. Program <b>init</b> implicitně spouští dvanáct synovských procesů (nosh) na dvanácti konzolách, čímž vzniká dvanáct rodin tasků.</p>
+<p><b>Spouštění procesů: </b> Funkce exec v Nothing OS je nestandardní. Nesnaží se spustit program, snaží se najít softwarový <a href="#drvs">driver</a>, který dokáže zpracovat formát daného spustitelného programu a vytvořit pomocí rutin "taskmana" proces. Tímto způsobem se systém Nothing vypořádal s problémem budoucího rozšiřování spustitelných formátů programů. Stačí vytvořit nový driver
+a přidat ho do konfiguračního souboru driverů. V tento okamžik je již systém Nothing schopen spouštět nový formát souboru. Drivery pro spouštění programů musí splňovat jistá <a href="./specification/execdrv.txt">kritéria</a></p>
+<p>Task Managment obsahuje spoustu rutin pro práci s procesy, které jsou dostupné přes virtuální <a href="#libs">knihovnu</a> "taskman".</p>
+<p align=right><a href="#main">Back</a></p>
+<hr>
+<a name="#vfs">
+<font size=4><b>Virtual File System (VFS)</b></font>
+<p>Je to imaginární nástavba, rozhraní mezi uživateli(tasky) a hardwarovými zařízeními počítače, ať už datovými jako např. disky tak komunikačními jako je síťová karta. Všeobecně je možno přistupovat na zařízení jehož kapacita je menší nebo rovna 4Gb, ale díky VFS je možné namontovat(virtuálně připojit do kořenového adresáře)
+dalších 512 zařízení, čímž nám stoupne celková možná adresovatelná kapacita na 1TB. VFS umožňuje přistupovat k zařízením skrze soubory, čímž se ohromně programátorům usnadňuje práce a zvyšuje se přehlednost. Práce se zařízeními je jen otázkou vytvoření příslušného driveru pro práci s ním. VFS má za úkol plnit funkci inteligentního rozhraní
+mezi programy a hardwarem počítače, či-li slouží jen pro práci s ním. Dále zajišťuje práci s FileSystemy, které jsou na namountovaných zařízeních, kontroluje práva pro přístup k souborům a zařízením jednotlivým programům.</p>
+<p>Při spouštění Nothing OS, VFS namountuje root partition, ve které se nachází veškeré systémové soubory nutné pro bezproblémový běh systému. Pokud Root partition nebude nalezena, vyvolá se Kernel Panic(hláška oznamující typ problému) a systém se zastaví.</p>
+<p>největší výhoda VFS extendovaných systémů je, že se téměř neomezeně zvětšuje velikost paměti, ke které máme přístup. Dokonce je možné realizovat to, že když si uděláte driver, který bude to co má na vstupu posílat do sítě, je již jedno pomocí jakého protokolu, namapujete zařízení, které tento driver bude používat, na nějaký adresář, pak pokud do něj budete zapisovat, budete posílat zapisovaná data do sítě. Tímto již VFS získává na síle a
+moci, v podstatě můžete použít zápis a čtení ze souboru k jakékoliv komunikaci, ať už je to komunikace mezi procesy nebo mezi počítači v síti. Jak jsem již asi říkal, je to v dnešní době to nejlepší rozhraní mezi procesy a hardwarem, co je mi známo.</p>
+<p align=right><a href="#main">Back</a></p>
+<hr>
+<a name="#ext2">
+<font size=4><b>Extended File system 2 (EXT2)</b></font>
+<p>EXT2 je inodovy File System. Díky inteligentní alokaci volných datových bloků se řadí mezi nejrychlejší FS, protože fragmentace se snižuje jen na nutné minimum. Opravdu jde vidět když hledáte soubor v dosovské <a href="./docs/Fat32.pdf">FATce</a> a v naší <a href="#ext2_s">EXT2</a>. Ext2 je navržena tak, aby data byly co nejblíže všem informačním strukturám, to má za následek,
+že se sníží nutnost seekování disku, což vede ke zrychlení práce a taky v případě poškození kusu disku, je zajištěno, že se nepoškodí všechny data na něm uložené. Celý disk je rozdělený na alokační jednotky "bloky", které můžou mít velikost 1024,2048 nebo 4096 byte. Ty se druží do tzv. Group, a to z důvodu optimalizace práce s diskem, sníží se počet seekování na disku, je to jako,
+když si v DOSu rozdělíte disk na více partitionu. Dalším optimalizačním stupněm je, že se EXT2 snaží ukládat data souboru do stejné groupy, ve které jsou uloženy informace o inodě, která je vlastní.</p>
+<p>Struktura Groupy vypadá takto:<br><br>
+struct ext2_group_desc {<br>
+<table>
+<tr><td>__u32<td>bg_block_bitmap;<td>/* Blocks bitmap block */
+<tr><td>__u32<td>bg_inode_bitmap;<td>/* Inodes bitmap block */
+<tr><td>__u32<td>bg_inode_table;<td>/* Inodes table block */
+<tr><td>__u16<td>bg_free_blocks_count;<td>/* Free blocks count */
+<tr><td>__u16<td>bg_free_inodes_count;<td>/* Free inodes count */
+<tr><td>__u16<td>bg_used_dirs_count;<td>/* Directories count */
+<tr><td>__u16<td>bg_pad;
+<tr><td>__u32<td>bg_reserved[3];
+</table>
+};</p>
+
+<p>Nejdůležitější částí EXT2 je tzv. SuperBlock, je to část informačních struktur, ve které se uchovávají informace o celém disku, a bez které se nic nehne, takže když se vám poškodí nebo nedej bože ztratí, můžete začít formátovat...</p>
+<p>Struktura superbloku:<br><br>
+struct ext2_super_block {	<br>
+<table>
+<tr><td>__u32<td>s_inodes_count;<td>/* Inodes count */
+<tr><td>__u32<td>s_blocks_count;<td>/* Blocks count */
+<tr><td>__u32<td>s_r_blocks_count;<td>/* Reserved blocks count */
+<tr><td>__u32<td>s_free_blocks_count;<td>/* Free blocks count */
+<tr><td>__u32<td>s_free_inodes_count;<td>/* Free inodes count */
+<tr><td>__u32<td>s_first_data_block;<td>/* First Data Block */
+<tr><td>__u32<td>s_log_block_size;<td>/* Block size */
+<tr><td>__s32<td>s_log_frag_size;<td>/* Fragment size */
+<tr><td>__u32<td>s_blocks_per_group;<td>/* # Blocks per group */
+<tr><td>__u32<td>s_frags_per_group;<td>/* # Fragments per group */
+<tr><td>__u32<td>s_inodes_per_group;<td>/* # Inodes per group */
+<tr><td>__u32<td>s_mtime;<td>/* Mount time */
+<tr><td>__u32<td>s_wtime;<td>/* Write time */
+<tr><td>__u16<td>s_mnt_count;<td>/* Mount count */
+<tr><td>__s16<td>s_max_mnt_count;<td>/* Maximal mount count */
+<tr><td>__u16<td>s_magic;<td>/* Magic signature */
+<tr><td>__u16<td>s_state;<td>/* File system state */
+<tr><td>__u16<td>s_errors;<td>/* Behaviour when detecting errors */
+<tr><td>__u16<td>s_pad;
+<tr><td>__u32<td>s_lastcheck;<td>/* time of last check */
+<tr><td>__u32<td>s_checkinterval;<td>/* max. time between checks */
+<tr><td>__u32<td>s_creator_os;<td>/* OS */
+<tr><td>__u32<td>s_rev_level;<td>/* Revision level */
+<tr><td>__u16<td>s_def_resuid;<td>/* Default uid for reserved blocks */
+<tr><td>__u16<td>s_def_resgid;<td>/* Default gid for reserved blocks */
+<tr><td>__u32<td>s_reserved[235];<td>/* Padding to the end of the block */
+</table>
+};</p>
+<p>Jak již bylo řečeno výše, soubory jsou zde nazývány inodami. Jejich velkou výhodou je, že jedna inoda může ukazovat na druhou, čímž docílíme sdílení diskových zdrojů a tudíž úspory diskových kapacit. Takovéto ukazování inod jedné na druhou se nazývá Link(symlink). Existují dva druhy linků, jeden se nazývá Soft a druhý Hard.
+Soft linky, je to celá cesta ukazující na soubor, který linkujeme, tato cesta je uložena v datových blocích inody, tam kde normální soubory mají uloženy svoje data, a protože lidi od Linuxu jsou šetřílci, jde cesta ukazující na soubor uložit i přímo do inody, pokud ovšem je její délka menší než 65 znaků. Hard linky jsou něco podobného, s tím rozdílem, že
+se jen vytvoří nová položka v adresáři, kam chceme umístit link s tím, že tato položka ukazuje přímo na linkovanou inodu, čili se dá říct, že tento způsob linkování je ekonomičtější pokud jde o místo na disku i co se rychlosti zpracování týče.</p>
+<p>Struktura Inody:<br><br>
+struct ext2_inode {	
+<table>
+<tr><td>__u16<td>i_mode;<td>/* File mode */	
+<tr><td>__u16<td>i_uid;<td>/* Owner Uid */
+<tr><td>__u32<td>i_size;<td>/* Size in bytes */	
+<tr><td>__u32<td>i_atime;<td>/* Access time */
+<tr><td>__u32<td>i_ctime;<td>/* Creation time */	
+<tr><td>__u32<td>i_mtime;<td>/* Modification time */
+<tr><td>__u32<td>i_dtime;<td>/* Deletion Time */	
+<tr><td>__u16<td>i_gid;	<td>/* Group Id */
+<tr><td>__u16<td>i_links_count;<td>/* Links count */	
+<tr><td>__u32<td>i_blocks;<td>/* Blocks count */
+<tr><td>__u32<td>i_flags;<td>/* File flags */	
+<tr><td>union<td>{<td>		
+<tr><td> struct<td>{ __u32<td>l_i_reserved1;
+<tr><td><td>} linux1;		
+<tr><td> struct<td>{ __u32<td>h_i_translator;		
+<tr><td><td>} hurd1;		
+<tr><td> struct<td>{ __u32<td>m_i_reserved1;		
+<tr><td><td>} masix1;	
+<tr><td>} osd1;<td><td>/* OS dependent 1 */
+<tr><td>__u32<td><td>i_block[EXT2_N_BLOCKS];<td>/* Pointers to blocks */
+<tr><td>__u32<td>i_version;<td>/* File version (for NFS) */	
+<tr><td>__u32<td>i_file_acl;<td>/* File ACL */
+<tr><td>__u32<td>i_dir_acl;<td>/* Directory ACL */	
+<tr><td>__u32<td>i_faddr;<td>/* Fragment address */
+<tr><td>union<td>{		
+<tr><td> struct<td>{ __u8<td>l_i_frag;<td>/* Fragment number */
+<tr><td><td>__u8<td>l_i_fsize;<td>/* Fragment size */			
+<tr><td><td>__u16<td>i_pad1;<td>
+<tr><td><td>__u32<td>l_i_reserved2[2];<td>
+<tr><td><td>} linux2;		
+<tr><td> struct<td>{ __u8<td>h_i_frag;<td>/* Fragment number */
+<tr><td><td>__u8<td>h_i_fsize;<td>/* Fragment size */			
+<tr><td><td>__u16<td>h_i_mode_high;<td>
+<tr><td><td>__u16<td>h_i_uid_high;<td>			
+<tr><td><td>__u16<td>h_i_gid_high;<td>			
+<tr><td><td>__u32<td>h_i_author;<td>		
+<tr><td><td>} hurd2;
+<tr><td> struct<td>{ __u8<td>m_i_frag;<td>/* Fragment number */
+<tr><td><td>__u8<td>m_i_fsize;<td>/* Fragment size */			
+<tr><td><td>__u16<td>m_pad1;<td>			
+<tr><td><td>__u32<td>m_i_reserved2[2];<td>
+<tr><td><td>} masix2;	
+<tr><td> } osd2;<td><td>/* OS dependent 2 */
+</table>
+};
+</p>
+<p>Pokud se chcete dozvědět více o EXT2 FS, odkazuji vás na zdrojové texty Linuxu <a href="ftp.kernel.org">ftp.kernel.org</a>, či <a href="#ext2_s">dokumentaci</a>, která je přiložena k té naší.</p>
+<p align=right><a href="#main">Back</a></p>
+<hr>
+<a name="#libs">
+<font size=4><b>Libraries</b></font>
+<p>Knihovny jsou jedním ze dvou možných modulů jádra. Dělíme je na externí a interní(virtuální). Knihovny obsahují často používané rutiny, umístěním těchto procedur do knihoven se zmenšuje velikost programů, které by jinak byly nuceny je implementovat do vlastního kódu. Virtuální knihovny jsou také jediný možný způsob jak volat funkce kernelu.
+Narozdíl od jiných Operačních Systémů nepoužívá Nothing přerušení k volání systémových služeb, ale právě knihovní funkce virtuálních knihoven. Jedinou vyjímkou je přerušení 0B1h, které při libovolném vstupu vždy navrátí Call Gate na knihovnu knihoven. Task pak může pomocí takto získaného Call Gate zjistit Call Gate na všechny knihovny v systému.
+</p>
+<p>
+Knihovny (zejména virtuální knihovny jádra) obsahují rutiny pro práci s choulostivými oblastmi systému. Proto nejsou všechny funkce knihoven přístupné každému - některé jsou umožněny pouze superuživateli (Booh). Jsou to například služby pro alokaci paměti do sdílené oblasti virtuálního prostoru procesů, pro zákaz přepínání tasků,... Chce-li nějaký
+program používat tyto funkce, musí být buďto spuštěn superuživatelem, nebo musí mít nastavený sticky bit ve file systemu, čímž proces automaticky získá práva vlastníka souboru. Speciální je virtuální knihovna system, která poskytuje své služby pouze modulům jádra.
+</p>
+<p>
+Knihovny jsou namapovány do sdílené paměti při startu systému, a jsou v ní po celou dobu běhu systému. Stejně jako drivery a samotný kernel, běží na privilegované úrovni 0, mají tak přístup ke všem zdrojům systému. Právě pro jejich privilegovanost jsou moduly jádra jedním z nebezpečných míst systému. To, které knihovny se mají po spuštění namapovat 
+do paměti (a zpřístupnit se tak procesům) je definováno v souboru <b>"/etc/libs.conf"</b>, kde je na každém řádku celá cesta k souboru knihovny. Zabezpečení systému před možností zneužití modulů spočívá v tom, že soubor "/etc/libs.con" a soubory knihoven by měli mít nastaveny práva přístupu pouze pro superuživatele.
+</p>
+<p>
+Systém Nothing obsahuje 5 standardních virtuálních knihoven : 
+<UL>
+<LI><A href="./include/lib.inc">LIB</a> - tato "knihovna knihoven" je základní knihovnou systému, umožňuje práci s ostatními knihovnami. Call Gate na vstupní bod této knihovny lze získat vyvoláním přerušení 0B1h</LI>
+<LI><A href="./include/memory.inc">memory</a> - knihovna obsahuje rutiny pro práci s pamětí, obsahuje rutiny jak pro práci s privátní pamětí procesů (funkce nepodléhající kontrole práv procesu), tak i rutiny pro práci se sdílenou pamětí. Funkce druhé skupiny jsou dostupné pouze superuživateli</LI>
+<LI><A href="./include/system.inc">system</a> - jediná knihovna, která nemůže být volána procesy, ale pouze ostatními moduly jádra. Není zde kontrola práv, bezpečnost je zajištěna přímo hardwarově nastavením pole DPL call gate na nulu, čímž tasky na privilegovanosti při pokusu o přístup k tomuto
+descriptoru vyvolají #GP</LI>
+<LI><A href="./include/taskman.inc">taskman</a> - knihovna pro spouštění a ukončování programů, pro zjišťování informací o právě běžících procesech. Dále pak obsahuje rutiny pro změnu jednotlivých parametrů taskmana, tyto funkce jsou převážně dostupné pouze superuživateli.</LI>
+<LI><A href="./include/vfs.inc">VFS</a> - knihovna pro přístup k Virtuálnímu File Systému, jedině pomocí této knihovny lze provádět operace se standardními vstupy/výstupy, přistupovat k souborům a všeobecně ke všem zařízením v systému.</LI>
+</UL>
+</p>
+<p align=right><a href="#main">Back</a></p>
+<hr>
+<a name="#drvs"><font size=4><b>Drivers</b></font>
+<p>
+Zařízení jsou druhým typem modulů jádra. Narozdíl od knihoven mají přesně stanovené funkce, a jejich vstupní parametry :
+<UL>
+<LI><B>fce 00000000h</B> -  Init - inicializuje daný driver, volá se při načítání driveru při startu systému </LI>
+<LI><B>fce 00000001h</B> -  Done - deinicializuje driver, volá se při vypínání systému</LI>
+<LI><B>fce 00000002h</B> -  StdRead - standardní čtení ze zařízení</LI>
+<LI><B>fce 00000003h</B> -  StdWrite - standardní zápis na zařízení</LI>
+<LI><b>fce 00000004h</B> -  Seek - nastaví pozici čtení/zápisu na zařízení</LI>
+<LI><b>fce 00000005h..0000000Fh</B> - reservované fce</LI>
+</UL>
+drivery dále obvykle obsahují speciální funkce, pro jejich používání je však nezbytné daný driver znát.
+</p>
+<p>
+Drivery dělíme na hardwarové a softwarové. Softwarové drivery jsou používány při snaze standardizovat vstupy/výstupy rutin, které však zpracovávají vstupy odlišně. Názorným příkladem softwarového driveru je driver Exec. Zde jsou přesně definované 
+vstupní a výstupní hodnoty, které driver musí podporovat, aby mohl spouštět programy. <BR>
+Hardwarové drivery se dělí na blokové a znakové zařízení. Rozdíl znakových driverů oproti blokovým je ten, že znakové drivery přenášejí data po znacích, blokové pak po 512bytech. Znakové zařízení je například klávesnice, konzola, příkladem blokového
+zařízení je pevný disk.
+</p>
+<p>
+Každý driver má své typové číslo, o velikosti dvojslova. V systému nemůžou existovat dvě zařízení se stejným typovým číslem. Toto typové číslo je jedním z hlavních parametrů procedury, která volá funkce driveru. Ta podle typového čísla určí, který driver
+má zavolat, zjistí zda zařízení podporuje volanou funkci a pokud ano, zavolá kód driveru. Procedura pro volání funkcí driveru není obecně dostupná, procesy je proto nedokáží zavolat sami. Pokud chtějí zavolat nějakou z jejich funkcí, musí k tomu použít
+knihovnu. Tímto způsoben se zajišťuje synchronní přístup k zařízením, a k zabezpečení přímého používání teoreticky nebezpečných funkcí, které drivery bez kontroly práv provádějí (např. formátování disku). Nejčastěji používanou knihovnou pro přístup k 
+zařízení je VFS, která "obalí" dané zařízení do VFS inody, a program pak k zařízení přistupuje jako k souboru. Například zápis na 4 konzolu(virtuální obrazovka) se v Nothing OS řeší tak, že se otevře soubor "/dev/tty3", a zapisuje se do něho pomocí standartních
+funkcí VFS-ka. Při zápisu do souboru VFS zjistí, že se nejedná o normální soubor, ale o zařízení, a proto nezapíše data do souboru, ale zavolá daný driver, který zajistí, aby se znaky vytiskly na obrazovku.
+</p>
+<p>
+<B>Systém Nothing obsahuje tyto drivery : </B>
+<BR>
+<BR>
+<TABLE border="1" Align="Center">
+<TR><TD><B>Typové číslo</B><TD><B>Název</B><TD><B>Typ</B><TD><B>Popis</B></TR>
+<TR><TD Align="Center">00000010h<TD> IDE driver<TD> blokové zařízení, interní<TD> zařízení k přístupu na IDE kompatibilní disky</TR>
+<TR><TD Align="Center">xxxx4010h<TD> Consoles driver<TD> znakové zařízení, interní<TD> zařízení pro výpis na obrazovku</TR>
+<TR><TD Align="Center">xxxx4020h<TD> Keyboard driver<TD> znakové zařízení, interní<TD> zařízení pro čtení z klávesnice</TR>
+<TR><TD Align="Center">00008000h<TD> EBF exec driver<TD> softwarové zařízení, interní<TD> zařízení pro spouštění EBF souborů</TR>
+<TR><TD Align="Center">00008100h<TD> Char encode driver<TD> softwarové zařízení, externí<TD> zařízení pro převod Scan kódu do ASCII</TR>
+<TR><TD Align="Center">00008101h<TD> EXT2 filesystem driver<TD> softwarové zařízení, interní<TD> zařízení pro přístup k EXT2 filesystému</TR>
+</TABLE>
+<BR>
+Horních 16 bitů typového čísla u driverů Consoles a Keyboard určuje, na které virtuální konzole se pracuje. Například soubor "/dev/tty3" bude ukazovat na driver s typovým číslem 00034010h.
+</p>
+<p>
+Procesy používají drivery při každém čtení/zápisu do VFS inod. Mohla by však nastat situace, kdy by více procesů otevřelo jeden soubor se zařízením a navzájem si přepisovali data.
+Kernel proto otevře soubor se zařízením jenom jednou, a jeho VFS inodu uložil ho do standardního vstupu/výstupu daného procesu. Další požadavek o otevření zařízení již neakceptuje. 
+Při vytváření procesů se hodnoty standardních vstupů a výstupů kopírují do nového procesu. Procesy pak používají na čtení/zápis standardních VFS inod uložených ve svém TSS. 
+Tak je zajištěn přístup k zařízením jen určitými procesy. Například k zařízení "/dev/tty0" budou mít přístup jen ty tasky, které jsou součástí rodiny tasku, který byl jako první spuštěn na konzole nula.
+Používání VFS inod uložených v TSS segmentu procesu je proto vynucováno. Pokud je zajištěno to, že task čte vstupní data z přesně dané VFS inody, může systém zajistit například přesměrování 
+výstupu jednoho programu do vstupu programu druhého, přesměrování vstupu programu ze souboru, místo z klávesnice,...
+</p>
+<p>
+Drivery se stejně jako knihovny načítají při inicializaci systému do sdílené paměti. To, které drivery se mají nahrát definuje konfigurační soubor <b>"/etc/drivers.conf"</b>.Tento soubor stejně jako soubory driverů samotné by měli mít nastavené práva zápisu jen pro superuživatele.
+</p>
+<p align=right><a href="#main">Back</a></p>
+<hr>
+<a name="#prg">
+<font size=4><b>Programs</b></font>
+<p>Výpis všech programů, které jsme vytvořili, pro první beta verzi NothingOS:
+<ul type="disc">
+ <li><a href="./nos-programs/nosh">nosh</a> v1.0 - Interpret příkazového řádku, zatím pouze spouští programy</li>
+ <li><a href="./nos-programs/mknod">mknod</a> v1.0 - Program na vytvoření zařízení</li>
+ <li><a href="./nos-programs/ps">ps</a> v1.0 - Program, který vypíše seznam všech běžících procesů</li>
+ <li><a href="./nos-programs/ls">ls</a> v1.0 - Program, který vypíše obsah adresáře</li>
+</ul>
+</p>
+<p>Struktura spustitelného formátu EBF (Executable Binary File):</p>
+<p><B>Hlavička:</B><br>
+<table>
+<tr><td>EBF_Header_Struc<td>Struc
+<tr><td>EBF_Signature<td>DB<td>'EBF',0<td>; signatura
+<tr><td>EBF_Header_Size<td>DD<td>?<td>; velikost hlavičky
+<tr><td>EBF_Name<td>DB<td>32 dup (?)<td>; vnitřní jméno souboru
+<tr><td>EBF_Data_Size<td>DD<td>?<td>; velikost data segmentu ve 4k (zarovnání nahoru)
+<tr><td>EBF_Code_Header_Size<td>DD<td>?<td>; velikost hlavičky a code segmentu ve 4k (zarovnání nahoru)
+<tr><td>EBF_Code_Entry_Point<td>DD<td>?<td>; vstupní bod programu
+<tr><td>EBF_Flags<td>DD<td>?<td>; flagy
+<tr><td>EBF_Stack_Size<td>DD<td>?<td>; velikost zasobníku
+<tr><td>EBF_LibsNum<td>DD<td>?<td>; počet knihoven
+<tr><td>Array[0..EBF_LibsNum-1] of EBF_SubHeader<td><td>?<td>; hlavičky knihoven, je jich EBF_LibsNum 
+<tr><td>EBF_Header_Struc<td>Ends
+</table>
+<BR>
+<p><B>Podhlavička popisu knihovny:</B><br>
+<table>
+<tr><td>EBF_SubHeader<td>Struc
+<tr><td>EBF_LS_LibName<td>DB<TD>16 dup (?)<td>; jméno knihovny
+<tr><td>EBF_LS_Lib_MinVer<td>DW<td>?<td>; minimální verze knihovny
+<tr><td>EBF_LS_Lib_CallGate<td>DD<td>?<td>; Offset do data segmentu, kam se uloží Call Gate
+<tr><td>EBF_SubHeader<td>Ends
+</table>
+<BR>
+Příklady, jak psát programy pro NothingOS, najdete v adresáři <a href="./nos-programs">nos-programs</a>
+</p>
+<a name="#prg2">
+<p>Programy, které pomáhají NothingOS ve spuštění a ovládnutí počítače:
+<ul type="disc">
+ <li><a href="./nos-tools/nolo.v14/nolo.v14">Nolo</a> v1.4 - Nothing Loader, program, zavede NothingOS z disku do paměti</li>
+ <li><a href="./nos-tools/nolo.v14/noloup.v14">NoloUp</a> v1.4 - Program, který zapíše Nolo na disk tak, aby po spuštění načetlo NOS kernel</li>
+ <li><a href="./nos-tools/oslo.v12/oslo.v12">Oslo</a> v1.2 - Os loader, prográmek, který zavádí boot sektory jednotlivých OSs podle přání uživatele</li>
+ <li><a href="./nos-tools/oslo.v12/osloup.v12">OsloUp</a> v1.2 - Program, který zapíše Oslo na disk, tak aby fungovalo jak má</li>
+</ul>
+</p>
+<p></p>
+<p></p>
+<p></p>
+<p align=right><a href="#main">Back</a></p>
+<hr>
+<a name="#zdroje">
+<font size=4><b>Zdroje informací</b></font><p>
+<a href="./docs/24319002.PDF">Intel architecture software denveloper's manual: Vol.1 Basic architecture</a><br>
+<a href="./docs/24319102.PDF">Intel architecture software denveloper's manual: Vol.2 Instruction set reference</a><br>
+<a href="./docs/24319202.PDF">Intel architecture software denveloper's manual: Vol.3 System programming</a><br>
+<a href="./docs/386intel.pdf">Intel 386 Programmer's reference manual</a><br>
+<a href="./docs/24161809.PDF">Intel processor identification and the CPUID instruction</a><br>
+<a href="./docs/intel-pmode/intlprot.html">Protected Mode programming for the intel386tm</a><br>
+<a href="./docs/24281603.PDF">Intel architecture optimization manual</a><br>
+<a href="./docs/exc_ia.pdf">Overview of the Protected Mode Operation of the Intel architecture</a><br>
+<a href="./docs/ESC_IA_P.PDF">Programming with the Intel architecture in flat memory model</a><br>
+<a href="./docs/pentopt.htm">How to optimize for the Pentium family of microprocessors</a><br>
+<a href="./docs/IntelMultiProcessorSpecv1.4.pdf">Multiprocessor specification</a><br>
+<a href="./docs/WECSSKAFloatingPoint.pdf">What every computer scientist should know about floating-point arithmetic</a><br>
+<a href="./docs/Matematický koprocesor Intel 8087.htm">Matematický koprocesor Intel 8087 (CZ)</a><br>
+<a href="./docs/24044805.PDF">Intel 387tm DX Math Coprocessor</a><br>
+
+<a href="./docs/execenv.pdf">Basic Execution Environment</a><br>
+<a href="./docs/protect/Working in the Protected Mode Environment.htm">Working in the Protected Mode Environment</a><br>
+<a href="./docs/lect7.htm">Caching and TLBs; Caching and Demand Paged Virtual Memory</a><br>
+<a href="./docs/memmgmt.htm">Memory Management: Address Translation, Caching</a><br>
+<a href="./docs/sigmetrics94.ps">Kernel based memory simulation</a><br>
+<a href="./docs/multitasking.html">Multitasking & Multithreading (CZ)</a><br>
+
+<a href="./docs/Fat32.pdf">FAT 32 overview</a><br>
+<a name="#ext2_s">
+<a href="./docs/Ext2fs-overview-0_1_ps.ps">The extended-2 file system</a><br>
+<a href="./docs/ext2/Design and Implementation of the Second Extended Filesystem.htm">Design and Implementation of the Second Extended Filesystem</a><br>
+<a href="./docs/ES2FS.HTM">Specs of the second extended filesystem</a><br>
+<a href="./docs/EXT2_SK1.TXT">Filesystems (CZ)</a><br>
+<a href="./docs/EXT2_SK2.TXT">EXT2 file system (CZ)</a><br>
+
+<a href="./docs/ata.pdf">ATA interface reference manual</a><br>
+<a href="./docs/FASTATA.PDF">Fast ATA-2 and FastATA sourcebook</a><br>
+<a href="./docs/Ata-CDrom.pdf">ATA packet interface for CD-ROM's</a><br>
+<a href="./docs/ide.pdf">AT attachment interface extension</a><br>
+<a href="./docs/floppy.pdf">CHMOS single-chip floppy disk controller</a><br>
+<a href="./docs/SCSI.PDF">Disc Drive SCSI-2/SCSI-3 Interface</a><br>
+
+<a href="./docs/SCANCODE.DOC">Keyboard Scan Code Specification</a><br>
+<a href="./docs/42W11.PDF">Keyboard controller</a><br>
+<a href="./docs/43W13.PDF">Keyboard and PS/2 mouse controller</a><br>
+
+<a href="./docs/8259A-2.pdf">Programmable interrupt controller PIC (8259A/8259A-2)</a><br>
+<a href="./docs/8259PIC.PDF">8259A Interrupt controller on the PC</a><br>
+<a href="./docs/interrupt.pdf">Using interrupts</a><br>
+<a href="./docs/8254-2.PDF">Programmable Interval Timer (8254)</a><br>
+
+<a href="./docs/dma.pdf">Direct memory Access (DMA)</a><br>
+<a href="./docs/PNP-ISA-v1.0a.pdf">Plug and Play ISA specifications</a><br>
+<a href="./docs/NE2000.PDF">RTL8019 Realtek Full-duplex ethernet controller with plug and play function</a><br>
+<a href="./docs/PARALLER.PDF">Parallel I/O ports</a><br>
+<a href="./docs/Serial.pdf">Serial Interfaces</a><br>
+<a href="./docs/PCIPERF.PDF">Techniques for increasing PCI performance</a><br>
+
+<a href="./docs/SPEAKER.TXT">Programming the PC Speaker</a><br>
+<a href="./docs/29823701.PDF">Intel ® 815 Chipset: Graphics Controller</a><br>
+
+<a href="./docs/tlk-0.8-3.ps">The Linux Kernel</a><br>
+<a href="./docs/How To Get To CPL 0 under Windows 95.htm">Extra BONUS: How To Get To CPL 0 under Windows 95</a><br>
+</p>
+<p align=right><a href="#main">Back</a></p>
+<hr>
+<a name="#tools">
+<font size=4><b>Programy přiložené k dokumentaci</b></font>
+<p>
+<ul type="disc">
+ <li><a href="./tools/rs405eng.exe">Acrobat Reader 4.05</a> - Prohlížeč formátu PDF
+ <li><a href="./tools/gs601w32.exe">GhostScript 6.01</a> - Prohlížeč formátu PS
+ <li><a href="./tools/gsv36w32.exe">GhostView 3.6</a> - Prohlížeč formátu PS a EPS
+ <li><a href="./tools/ATHELP.ZIP">ATHELP</a> - To samé co SysMan, ale ještě navíc informace o procesorech a hlavně o Protected Modu
+ <li><a href="./tools/SYSMAN.ZIP">SysMan</a> - Přehled systémových funkcí v DOSu
+ <li><a href="./tools/NETDEM.ZIP">NetMan</a> - Příručka k programování IPX/SPX pod DOSem a Novelem
+ <li><a href="./tools/HELPPC.ZIP">HelpPC</a> - Informace o programování PC
+ <li><a href="./tools/TECHHELP.ZIP">TechHelp</a> - Starší předchůdce SysMana
+ <li><a href="./tools/PCGPE10.ZIP">Programmer's Guide</a> -  Programátorská příručka
+</ul>
+</p>
+<p align=right><a href="#main">Back</a></p>
+<hr>
+<a name="#credits">
+<font size=4><b>Credits</b></font>
+<h4>Thanks goes to:</h4>
+<table>
+<tr><td><b>Čerpací stanice LÁZ</b><td> - za umožnění rozvíjení našich myšlenek revolučními směry a za hydrataci naších těl
+<tr><td><b>Nošovice</b><td> - za <b>sqělý</b> hydrát zlatavé barvy
+<tr><td><b>Stock Plzeň - Božkov</b><td> - za Citrus
+<tr><td><b>Sodovkárny R. Sýkora</b><td> - za Kofolu
+<tr><td><b>Philip Morris a Kryštofu Kolumbovi</b><td> - za tabák
+<tr><td><b>Hardmuth Koh-I-Noor</b><td> - za tužky, které se velkou měrou podílely na vývoji
+<tr><td><b>Borland International</b><td> - za kombajn Intel assembleru
+<tr><td><b>Intelu</b><td> - <b>neděkujeme</b> za to, že si hráli na bohy a dělali neúplnou dokumentaci svých výtvorů
+<tr><td><b>Programům Sysman a Athelp</b><td> - za knowledge
+<tr><td><b>Firmám HP a EPSON</b><td> - za tiskárny, které chrlily kilogramy papírů s dokumentacemi
+<tr><td><b>Výrobcům hardwaru</b><td> - za antidokumentaci jejich produktů
+<tr><td><b>Celosvětové síti Internet</b><td> - za nevyčerpatelný zdroj informací
+<tr><td><b>Vrchním z čerpací stanice LÁZ</b><td> - za refresh našich myslí
+<tr><td><b>Mimozemšťanům</b><td> - za to, že ještě nezaútočili a čekali až dokončíme svou práci
+<tr><td><b>Sami sobě</b><td> - za sqělou práci, kooperaci, kompromisy, povětšinou bez bolesti, a samozřejmě za naši genialitu:)
+<tr><td><b>Michalu Brázdovi </b><td> - za to že je a bude
+<tr><td><b>Tomovi Kmecovi</b><td> - za psycho podporu a společně strávené refreshovací cykly
+<tr><td><b>Ivošovi Tvardíkovi</b><td> - za chatu a hydro podporu
+<tr><td><b>Pavlovi Malíkovi</b><td> :*-))))
+<tr><td><b>Biolkovi</b><td> - za konzultace
+<tr><td><b>Linus Torvalds</b><td> - za ideu vytvoření vlastního OS
+<tr><td><b>Vývojářům Linuxu</b><td> - za varování před možnými chybami, které mohou vzniknout během vývoje OS
+<tr><td><b>MR. OS/X</b><td> - za že nám dokázal, že komerce vyžírá mozek
+<tr><td><b>Hudba</b><td>Louis Armstrong, Daniel Landa, Jane Powell, Metalica, Korn, Underworld, Chemical Brothers,
+Moby, Mozart, Jaromír Nohavica, Lux Radio Theater, Tři sestry, Beasty Boys, Les Miserables, Soundtrack Samotáři, Matrix,
+Forrest Gump, R.E.M, Fools Garden, Queen, The Beatles
+<tr><td><b>Tlačítku RESET</b><td> - za to že je
+<tr><td><b>Školním židlím</b><td> - za jejich "pohodlnost" :)
+<tr><td><b>Naší škole</b><td> - za to, že nám poskytla vše co jsme potřebovali:)
+<tr><td><b>Microsoft</b><td> - za to, že nám svým dílem umožnili být lepší
+</table>
+<p align=right><a href="#main">Back</a></p>
+<p>Omlouváme se za všechny pravopisné chyby které nám unikly, strohost a absenci jakýchkoliv obrázků, ale jsme programátoři</p>
+</body>
+</html>

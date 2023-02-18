@@ -1,0 +1,65 @@
+-Vytvoreni souboru:
+ -nejdriv zjistim podle hlavicek group, kde je volna inoda
+ -nactu bitmapu inod a zalokuju jednu inodu, vytvorim strukturu
+ -nactu bitmapu bloku, alokuju jeden blok, ktery priradim nove inode
+ -zapisu info strukturu inody na disk
+ -upravim hlavicku groupy, ve ktere jsem inodu alokoval a informace
+  o volnych inodach a blocich v superbloku
+
+-kdyz se alokuji bloky pro novou inodu, tak se mezi poslednim blokem
+ predchazejici inody a novou inodou vynecha 8 bloku, pro budouci pouziti
+ predchazejici inode...
+-bloky pro inodu se alokuji ve stejne groupe, pokud je to mozne,kvuli seekovani
+-pri hledani voleho bloku:
+ - nacte se bitmapa bloku, najde se prvni volny byte od zacatku bitmapy
+   a zalokuje se 0. bit a cely byte pripadne dane inode
+ - nejdrive se hledaji cele volne byty az pak se hledaji ciste jen bity, cily
+   se hledaji byty, ktere nemaji hodnotu 0FFh
+
+-vypocty:
+ -do ktere gorupy patri inoda:
+  group = ((INode number - 1) / INodes per group) + 1;
+ -do ktere goupy patri block
+  group = ((Block number - 1) / Blocks per group) + 1;
+
+-ext2:
+ - musim nekde kontrolovat, jestli nejaky idiot nechce namontovat
+   zarizeni na uplne to same zarizeni, ktere uz je namontovane
+   napr. jestli nechce namontovat root na root =>
+   mount / /dev/hda1
+   mount /mnt /dev/hda1
+   - proste musim v mounttab polozce typ zarizeni s typem zarizni
+    ktere vytahnu z /dev/hda1
+
+-nasel sem reseni toho, ze kdyz se odalokovava descriptor tak se
+ segmentoveho registru, ve kterem pred tim byl selector na tento
+ descriptor, tak se do nej ulozi selector na descriptor, ktery
+ popisuje pamet o velikosti 0, protoze davat tam selector na data
+ segment kernelu je blbost a mohlo by to byt zneuzitelne...
+
+-reseni problemu bloku mensich nez 4Kb:
+ - bude stacit vymezit jeden bit ve flagoch v file_mapped_page(ci tak nak)
+   jako informacni o tom, jestli ma zarizeni, ze ktereho se ma dany 4Kb
+   blok nacitat, blok vetsi nez 4Kb nebo ne. Pokud se pak vyvola PF
+   tak se ten bit zkontroluje a pokud je blok mensi nez 4Kb tak se zavola
+   univerzalni fce pro nacteni bloku aby to dalo 4k.
+
+-kazda page, ktera bude typu loadfromfile, bude muset mit ve flagoch info
+ bit o tom, jestli se pred tim, nez bude pozdeji vyrazovana z pameti
+ swap deamonem, ma byt pokud je dirty bit nastaven, ulozena na disk nebo
+ proste jen zrusena
+
+-INIT rutiny u driveru nesmi mit brat jakekoliv hodnoty ze vstupnich registru
+ musi to byt programy sami o sobe, proste nesmi byt zavisle na tom, co
+ je pri jejich zavolani v registrech !!
+
+-delka nazvu driveru muze mit maximalni delku 32 znaku + nula na konci
+ => max delka nazvu driveru s ukoncenim(0) = 33 znaku
+-zakazane znaky v nazvu driveru => mezera a znak(10)
+ - 0 znamena konec nazvu
+
+-jo tasky musi mit descriptor s rukejetema k souborum s DPL=0
+ aby tam nemohli zapisovat !!!
+
+-pokud se otevira VFS inoda pro zarizeni pak se automaticky nastavuje
+ Share bit na 1, cili zarizeni jsou vzdy sdilene

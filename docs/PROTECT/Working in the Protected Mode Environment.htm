@@ -1,0 +1,992 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!-- saved from url=(0054)http://members.tripod.com/protmode/prashant/index.html -->
+<HTML lang=en><HEAD><TITLE>"Working in the Protected Mode Environment"</TITLE>
+<META content="text/html; charset=windows-1250" http-equiv=Content-Type>
+<META content="" name=description Environment?? Mode Protected the in Working>
+<META content="MSHTML 5.00.2614.3500" name=GENERATOR><LINK 
+href="http://texinfo.org/" rel=generator-home></HEAD>
+<BODY>
+<CENTER>
+<SCRIPT language=JavaScript>
+<!--
+function getCurrentPage() {
+	var all_cookies = this.document.cookie;
+	if (all_cookies == '') {
+		return false;    // No cookies found.
+	}
+
+	var cookie_name = 'MEMBER_PAGE=';
+	var start = all_cookies.lastIndexOf(cookie_name);
+	if (start == -1) {
+		return false;    // Member page URL not found.
+	}
+	start += cookie_name.length;    // Skip name.
+
+	var end = all_cookies.indexOf(';', start);
+	if (end == -1) {
+		end = all_cookies.length;   // Only cookie left.
+	}
+
+	return all_cookies.substring(start, end);
+}
+
+// -->
+</SCRIPT>
+
+<CENTER>
+<TABLE align=center border=0 cellPadding=0 cellSpacing=0>
+  <TBODY>
+  <TR>
+    <TD><A href="http://www.tripod.lycos.com/"><IMG alt="hosted by tripod" 
+      border=0 height=26 
+      src="Working in the Protected Mode Environment_soubory/tripodsm.gif" 
+      vspace=2 width=116></A></TD></TR>
+  <TR>
+    <TD align=middle vAlign=top width=468><IFRAME border=0 frameBorder=0 
+      height=60 marginHeight=0 marginWidth=0 scrolling=no 
+      src="Working in the Protected Mode Environment_soubory/member;h=misc;sz=468x60;ord=119968641823315.htm" 
+      width=468></IFRAME></TD></TR></TBODY></TABLE>
+<TABLE align=center border=0 cellPadding=0 cellSpacing=3 width=468>
+  <TBODY>
+  <TR>
+    <TD colSpan=2><IMG height=1 
+      src="Working in the Protected Mode Environment_soubory/tripod1.gif" 
+      width=1></TD></TR>
+  <TR>
+    <TD><FONT face="verdana, arial, helvetica, sans serif" size=1><A 
+      href="http://members.tripod.com/bin/email_this_page/display_form">E-mail 
+      this page to a friend</A></FONT></TD>
+    <TD align=right><FONT face="verdana, arial, helvetica, sans serif" 
+      size=1><A 
+      href="http://members.tripod.com/bin/email_when_updated/display_form">Tell 
+      me when this page is 
+updated</A></FONT></TD></TR></TBODY></TABLE></CENTER></CENTER>
+<H1>Table of Contents</H1>
+<UL>
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Top">Contents</A> 
+
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Introduction">1 
+  Introduction to Protected Mode</A> 
+  <UL>
+    <LI><A 
+    href="http://members.tripod.com/protmode/prashant/index.html#Quick%20look">1.1 
+    A Brief Introduction to Protected Mode</A> 
+    <LI><A 
+    href="http://members.tripod.com/protmode/prashant/index.html#Advantages">1.2 
+    The Benefits of Using Protected Mode</A> </LI></UL>
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#RM%20Addressing">2 
+  Addressing in Real Mode</A> 
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#80386%20Registers">3 
+  Registers in the 80386</A> 
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#RM%20Vector%20Table">4 
+  The Real Mode Vector Table</A> 
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Hardware%20Interrupts">5 
+  Hardware Interrupts</A> 
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Keyboard">6 
+  Keyboard and the A20 Line</A> 
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Selectors%20and%20Descriptors">7 
+  Segment Selectors and Descriptors</A> 
+  <UL>
+    <LI><A 
+    href="http://members.tripod.com/protmode/prashant/index.html#Segment%20Selectors">7.1 
+    Segment Selectors</A> 
+    <LI><A 
+    href="http://members.tripod.com/protmode/prashant/index.html#Tables">7.2 
+    Tables Required in Protected Mode</A> 
+    <LI><A 
+    href="http://members.tripod.com/protmode/prashant/index.html#Descriptors">7.3 
+    Descriptors</A> </LI></UL>
+  <LI><A href="http://members.tripod.com/protmode/prashant/index.html#About">8 
+  About This Document</A> 
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Pending%20Work">9 
+  Other things to be done (Work in Progress)</A> 
+  <LI><A href="http://members.tripod.com/protmode/prashant/index.html#Index">10 
+  Index</A> </LI></UL>
+<P>
+<HR>
+Node:<A name=Top>Top</A>, Next:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Introduction" 
+rel=next>Introduction</A>, Up:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#(dir)" 
+rel=up>(dir)</A> <BR>
+<H1>Contents</H1>
+<P>This documentation was written due to the increase in the number of people in 
+the DJGPP mailing list asking for details regarding what protected mode really 
+is. The documentation contains detailed information about protected mode. Novice 
+users should generally read only this page, while others who require more 
+information can get into the depths. 
+<UL>
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Introduction">Introduction</A>: 
+  Introduction to Protected Mode 
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#RM%20Addressing">RM 
+  Addressing</A>: Real Mode Addressing 
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#80386%20Registers">80386 
+  Registers</A>: The 80386 Registers 
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#RM%20Vector%20Table">RM 
+  Vector Table</A>: The 8086 (Real Mode) Interrupt Vector Table 
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Hardware%20Interrupts">Hardware 
+  Interrupts</A>: Hardware Interrupts 
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Keyboard">Keyboard</A>: 
+  The Keyboard and the A20 Line 
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Selectors%20and%20Descriptors">Selectors 
+  and Descriptors</A>: Segment Selectors and Descriptors 
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#About">About</A>: 
+  List of Various Contributors 
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Pending%20Work">Pending 
+  Work</A>: What Still Needs to be Done 
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Index">Index</A>: 
+  General Index </LI></UL>
+<P>
+<HR>
+Node:<A name=Introduction>Introduction</A>, Next:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#RM%20Addressing" 
+rel=next>RM Addressing</A>, Previous:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Top" 
+rel=previous>Top</A>, Up:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Top" rel=up>Top</A> 
+<BR>
+<H1>1 Introduction to Protected Mode</H1>
+<UL>
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Quick%20look">Quick 
+  look</A>: A Brief Look at Protected Mode 
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A>: 
+  The Benefits of Using Protected Mode </LI></UL>
+<P>
+<HR>
+Node:<A name=Quick%20look>Quick look</A>, Next:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Advantages" 
+rel=next>Advantages</A>, Up:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Introduction" 
+rel=up>Introduction</A> <BR>
+<H2>1.1 A Brief Introduction to Protected Mode</H2>
+<P><STRONG>What is <EM>Protected Mode</EM>?</STRONG> 
+<P>The 80386+ rectifies the deficiencies of 8086 which has little or no support 
+for memory protection, virtual memory, multitasking, or memory above 640K, and 
+also remains compatible with the 8086 (and with the 286). In <A 
+href="http://www.midpec.com/djgpp/">DJGPP</A>, the 386, 486, etc. are considered 
+to be identical. The points made about the 386 apply to all its successors as 
+well. 
+<P>The 8086 runs in only one mode. When Intel engineers designed the 286, they 
+wanted to support extra features that would be incompatible with the 8086. They 
+also wanted to maintain 8086 compatibility. To satisfy these requirements, the 
+286 uses two modes. Real mode, the default, makes the chip act like an 8086 with 
+only minor enhancements. The differences appear in protected mode. Most programs 
+designed to run on an 8086 won't run under protected mode without changes. 
+<EM>DOS is one of these programs</EM>. 
+<P>The 386 supports even more modes because it has more functions. Once again, 
+the default is real mode. Like the 286, the 386 can operate in protected mode. 
+However, the latter is vastly different internally. Protected mode on the 386 
+offers the programmer better protection and more memory than on the 286. The 386 
+also supports a third mode, <DFN>Virtual 8086 (V86) mode</DFN>. In V86 mode, the 
+386 operates in protected mode but allows some programs it is running to use a 
+simulated real-mode environment. That means programs like DOS can coexist with 
+protected mode programs without the need for switching between real and 
+protected modes. The V86 mode has several advantages over real mode which are 
+mentioned in the chapters that follow. 
+<P>
+<HR>
+Node:<A name=Advantages>Advantages</A>, Previous:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Quick%20look" 
+rel=previous>Quick look</A>, Up:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Introduction" 
+rel=up>Introduction</A> <BR>
+<H2>1.2 The Benefits of Using Protected Mode</H2>
+<P>All the 386's special features become available in the processor's protected 
+mode. Let's take a brief look at the extra power this mode provides. 
+<P><STRONG>Access to 4 gigabytes of memory</STRONG> - This is the most obvious 
+difference between protected mode and real mode. Protected mode programs can use 
+up to 4 GB of memory for data, code or stack space. If you're willing to gamble 
+on undocumented stuff, real-mode programs can access memory above the 1MB limit 
+for data storage. However, using these techniques for code and stack space is 
+generally impractical. Of course, you probably don't have 4GB of memory on your 
+system. That brings us to the next feature. 
+<P><STRONG>Virtual memory</STRONG> - The Memory Management Unit (MMU) on the 386 
+allows virtual memory to be implemented, which makes a program think that it has 
+4GB of memory when it has less (actually much less). The 386 and special 
+operating system software simulate the extra memory using a mass storage (like a 
+hard disk drive). Of course, you need about 4GB of free disk storage space, but 
+that's another problem. 
+<P><STRONG>Address translation</STRONG> - The MMU also allows addresses to be 
+translated, or mapped, before use. For example, you might want to translate all 
+references to a 4KB block at a segment B800H (the CGA text buffer) to a data 
+buffer in your program. Later, your program could copy the buffer to the screen. 
+This is useful when redirecting the output of a program that directly writes to 
+the screen. Translation can also simulate expanded memory without an expanded 
+memory board. 
+<P>Programs work with logical addresses. The 386 converts these logical 
+addresses into 32-bit linear (non-segmented addresses). The MMU then converts 
+linear addresses to physical addresses. If the MMU isn't active, linear and 
+physical addresses are equivalent. Applying this terminology to real mode, the 
+address B800:0010 is a logical address. Its equivalent linear address is B8010H. 
+Since real mode doesn't use the MMU, the physical address is the same as the 
+linear address. 
+<P><STRONG>Improved segmentation</STRONG> - In real mode, all segments are 64KB 
+long and are in fixed locations. In protected mode, segments can be as short as 
+one byte or as long as 4GB. The function 
+<STRONG>__djgpp_nearptr_enable()</STRONG> uses this feature. Attempting to 
+access memory past the end of a segment will cause an error. Segments may start 
+off at any location. In addition, the programmer determines each segment's 
+intended use, which the 386 enforces. That is, if the program attempts to write 
+data into a segment meant for code, the 386 will force an error. You also can 
+define a segment that covers the entire address range of 4GB and effectively 
+dispense with segments altogether. All memory references are then via 32-bit 
+non-segmented pointers. These flat pointers correspond directly to linear 
+addresses. 
+<P><STRONG>Memory protection</STRONG> - The 386 allows memory to be protected. 
+For example, a user's program may not be able to overwrite operating system 
+data. This, combined with the checks on segments, protects programs against bugs 
+that would crash the computer. 
+<P><STRONG>Process protection</STRONG> - In a similar fashion to memory 
+protection, different programs (or parts of a program) can be protected from 
+each other. One program might not have access to another program's data, while 
+the operating system might have access to everyone's data. Conversely, user 
+programs may have only limited access to the operating system's data. 
+<P><STRONG>32-bit registers</STRONG> - All general-purpose registers on the 386 
+are 32-bits wide. Except for the E prefix (ex: EAX instead of AX), these 
+registers have the same names as in the 8086. Two new segment registers (FS and 
+GS) are also available; they are accessible from all modes but are most useful 
+in protected mode programs. 
+<P><STRONG>Improved addressing modes</STRONG> - In real mode, programs can only 
+form addresses with constant values, the BX or BP register, and the SI or DI 
+register. In protected mode programs, any register can form addresses. An index 
+can include a scale factor of two, four or eight. This allows you to write 
+instructions like <CODE>MOV EBX, [EDI][EAX*8]+2</CODE>. 
+<P><STRONG>Multitasking support</STRONG> - The 386 has special provisions to 
+save the current processor state and switch to a new task (known as <DFN>context 
+switch</DFN>). A single instruction can switch contexts rapidly. This has 
+important ramifications for operating systems and real-time processing. 
+<P><STRONG>Hardware debugging</STRONG> - The 386 has special hardware for 
+implementing single-step code and data breakpoints. This hardware is available 
+in real mode with some special techniques. 
+<P>
+<HR>
+Node:<A name=RM%20Addressing>RM Addressing</A>, Next:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#80386%20Registers" 
+rel=next>80386 Registers</A>, Previous:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Introduction" 
+rel=previous>Introduction</A>, Up:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Top" rel=up>Top</A> 
+<BR>
+<H1>2 Addressing in Real Mode</H1>
+<P>In the 8086-type processors, memory is organized into bytes (8 bits=1 byte). 
+When dealing with quantities larger than eight bits, the 8086 stores the least 
+significant byte in the lowest address. While that sounds logical, it's 
+confusing when you're reading listings or memory dumps because the numbers seem 
+backwards. For instance, the computer stores the word B800H as two bytes: 00H 
+followed by B8H. 
+<P>The Intel family of processors use a memory-addressing technique known as 
+<DFN>segmentation</DFN>. A segment is a region of memory. The computer can 
+handle multiple segments. In real mode (the one in which DOS normally runs), 
+each segment is 64K long and there are 65536 possible segments. But these 
+segments overlap so that each starts 16 bytes after the one before it. This is 
+why DOS cannot address more than 1MB directly (65536 * 16 = 1048576 = 1MB). The 
+8086 and 8088 can only address 1MB anyway. The 286, 386+ can accomodate much 
+more memory, but DOS cannot access it directly. 
+<P>Segments are numbered from 0000H to FFFFH. Since each segment is 64KB long, 
+we use a value called an <DFN>offset</DFN>, to specify the byte we want to 
+address. A complete 8086 address always contains a segment and an offset. <PRE>If a segment is 0040H and the offset is 0102H, we write
+0040:0102. Because segments overlap every 16 (10H) bytes, address
+0000:0010 is identical to address 0001:0000. Likewise 0040:0000 is the
+same as address 0000:0400, which is the same as 0020:0200. The computer
+also stores segmented addresses ``backwards''. For instance, 0040:1234
+appears like this in the computer's memory (in hex):
+
+34 12 40 00
+
+To verify that all the addresses above are the same, convert them to
+linear addresses. To convert a segmented address to linear address,
+multiply the segment value by 16 (10H) and add the offset.
+
+So, we have (all in hex)
+
+0040 * 10 + 0000 = 00400
+0000 *  0 + 0400 = 00400
+0020 * 10 + 0200 = 00400
+
+all of which ultimately point to the same area of memory.
+</PRE>
+<P>
+<HR>
+Node:<A name=80386%20Registers>80386 Registers</A>, Next:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#RM%20Vector%20Table" 
+rel=next>RM Vector Table</A>, Previous:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#RM%20Addressing" 
+rel=previous>RM Addressing</A>, Up:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Top" rel=up>Top</A> 
+<BR>
+<H1>3 Registers in the 80386</H1>
+<P>The 80386 has four general-purpose registers, a flags register, six segment 
+registers, two index registers, a stack segment register and pointer, base 
+register and an instruction pointer register. In addition to these, there are 
+other special registers on the 386, namely: <PRE><STRONG>GDTR</STRONG> (Global Descriptor Table Register)
+<STRONG>IDTR</STRONG> (Interrupt Descriptor Table Register)
+<STRONG>LDTR</STRONG> (Local Descriptor Table Register)
+<STRONG>TR</STRONG> (Task Register)
+<STRONG>CR0-CR3</STRONG> (Control Registers)
+<STRONG>DR0-DR7</STRONG> (Debug Registers)
+</PRE>
+<P>The figure below shows most of these registers and their significance. As you 
+can see, the 386+ have a variety of special registers. They usually aren't 
+useful under DOS, but we'll see some of them when we look at protected mode 
+extensions to DOS. <PRE><IMG alt=fig1.jpg src="Working in the Protected Mode Environment_soubory/fig1.jpg">
+<IMG alt=fig2.jpg src="Working in the Protected Mode Environment_soubory/fig2.jpg">
+</PRE>
+<P>
+<HR>
+Node:<A name=RM%20Vector%20Table>RM Vector Table</A>, Next:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Hardware%20Interrupts" 
+rel=next>Hardware Interrupts</A>, Previous:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#80386%20Registers" 
+rel=previous>80386 Registers</A>, Up:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Top" rel=up>Top</A> 
+<BR>
+<H1>4 The Real Mode Vector Table</H1>
+<P>The 8086 family of processors can respond to 256 different interrupts. 
+Starting at location 0000:0000 is a table of addresses for each 
+<DFN>interrupt</DFN>. Each entry in this interrupt vector table is four bytes 
+long, enough for a segment and an offset. So, we have 1024 bytes or 1K reserved 
+for the Real Mode Interrupt vector table. If the processor receives an interrupt 
+2 (INT 2), for example, it saves the flags and current values of CS and IP on 
+the stack. It then obtains the address stored at location 0000:0008 and executes 
+the interrupt service routine (<DFN>ISR</DFN>) at that address. An 
+<CODE>IRET</CODE> instruction in the ISR signals the end of the interrupt<A 
+href="http://members.tripod.com/protmode/prashant/index.html#fn-1" 
+rel=footnote><SUP>1</SUP></A> and causes the processor to resume what it was 
+doing before the interrupt. 
+<P>
+<HR>
+Node:<A name=Hardware%20Interrupts>Hardware Interrupts</A>, Next:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Keyboard" 
+rel=next>Keyboard</A>, Previous:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#RM%20Vector%20Table" 
+rel=previous>RM Vector Table</A>, Up:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Top" rel=up>Top</A> 
+<BR>
+<H1>5 Hardware Interrupts</H1>
+<P>A hardware interrupt is a special signal from an I/O device to the computer. 
+This signal informs the computer that the I/O device requires attention. The 
+processor will normally stop whatever it is doing to service the interrupt. When 
+the interrupt completes, the processor resumes execution where it left off. 
+<P>Hardware interrupts can come from various sources. For example, every time 
+you press or release a key, you generate an interrupt. Other interrupts 
+originate from the clock, printer, serial port, disk drives and so on. The 
+processor itself causes some interrupts. <CODE>INT 0</CODE> for instance, occurs 
+when a program attempts to divide by zero. These are all hardware interrupts. 
+<P>The 8259 Programmable Interrupt Controller (<DFN>PIC</DFN>) on the 
+motherboard manages all hardware interruptrs. These controllers take interrupt 
+signals from various devices and convert them to specific interrupts for the 
+processor. 
+<P>Tha table below shows the hardware interrupts in real mode with their 
+corresponding PIC interrupt request inputs (known as <DFN>IRQ</DFN> lines). Do 
+not confuse IRQ numbers with interrupt numbers. For example, the keyboard 
+connects to IRQ1, which sends INT 9 to the CPU. The PICs can be reprogrammed to 
+generate different interrupt numbers for each IRQ, but you won't often do that 
+unless you work with the protected mode techniques described later in this 
+document. 
+<P>The PICs also control the priority of interrupts. For example, the clock (on 
+IRQ 0) has a higher priority than the keyboard (IRQ 1). If the processor is 
+servicing a clock interrupt, the PIC won't generate an interrupt for the 
+keyboard until the clock's ISR resets the PIC. On the other hand, the clock can 
+interrupt the keyboard's ISR. The PICs can be programmed to use a variety of 
+priority schemes, but this is rarely, if ever, seen in PC programming. 
+<P>The AT's extra PIC connects to the IRQ 2 of the first PIC. Therefore, the 
+extra PIC's IRQs (8 through 15) have the same priority as IRQ 2. Disabling IRQ 2 
+disabled all of the second PICs interrupts. 
+<P>
+<TABLE>
+  <TBODY>
+  <TR align=left>
+    <TD>Interrupt 
+    <TD>IRQ Number 
+    <TD>Description <BR></TD>
+  <TR align=left>
+    <TD>00H 
+    <TD>- 
+    <TD>Divide by zero or divide overflow <BR></TD>
+  <TR align=left>
+    <TD>02H 
+    <TD>- 
+    <TD>NMI (Non-maskable Interrupt) <BR></TD>
+  <TR align=left>
+    <TD>04H 
+    <TD>- 
+    <TD>Overflow (generated by INTO) <BR></TD>
+  <TR align=left>
+    <TD>08H 
+    <TD>0 
+    <TD>System timer <BR></TD>
+  <TR align=left>
+    <TD>09H 
+    <TD>1 
+    <TD>Keyboard <BR></TD>
+  <TR align=left>
+    <TD>0AH 
+    <TD>2 
+    <TD>Interrupt from second PIC <BR></TD>
+  <TR align=left>
+    <TD>0BH 
+    <TD>3 
+    <TD>COM2 <BR></TD>
+  <TR align=left>
+    <TD>0CH 
+    <TD>4 
+    <TD>COM1 <BR></TD>
+  <TR align=left>
+    <TD>0DH 
+    <TD>5 
+    <TD>LPT2 <BR></TD>
+  <TR align=left>
+    <TD>0EH 
+    <TD>6 
+    <TD>Floppy Disk <BR></TD>
+  <TR align=left>
+    <TD>0FH 
+    <TD>7 
+    <TD>LPT1 <BR></TD>
+  <TR align=left>
+    <TD>70H 
+    <TD>8 
+    <TD>Real Time Clock <BR></TD>
+  <TR align=left>
+    <TD>71H 
+    <TD>9 
+    <TD>General I/O <BR></TD>
+  <TR align=left>
+    <TD>72H 
+    <TD>10 
+    <TD>General I/O <BR></TD>
+  <TR align=left>
+    <TD>73H 
+    <TD>11 
+    <TD>General I/O <BR></TD>
+  <TR align=left>
+    <TD>74H 
+    <TD>12 
+    <TD>General I/O <BR></TD>
+  <TR align=left>
+    <TD>75H 
+    <TD>13 
+    <TD>Coprocessor <BR></TD>
+  <TR align=left>
+    <TD>76H 
+    <TD>14 
+    <TD>Hard Disk <BR></TD>
+  <TR align=left>
+    <TD>77H 
+    <TD>15 
+    <TD>General I/O <BR></TD></TR></TBODY></TABLE>
+<P>You can stop interrupts from disturbing an important section of code in 
+several ways. The <CODE>CLI</CODE> instruction disables all interrupts except 
+the nonmaskable interrupt <DFN>NMI</DFN> since the NMI, which does not go 
+through a PIC cannot be disabled this way<A 
+href="http://members.tripod.com/protmode/prashant/index.html#fn-2" 
+rel=footnote><SUP>2</SUP></A>. In addition, PICs can be reprogrammed to turn off 
+specific interrupts. 
+<P>
+<HR>
+Node:<A name=Keyboard>Keyboard</A>, Next:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Selectors%20and%20Descriptors" 
+rel=next>Selectors and Descriptors</A>, Previous:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Hardware%20Interrupts" 
+rel=previous>Hardware Interrupts</A>, Up:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Top" rel=up>Top</A> 
+<BR>
+<H1>6 Keyboard and the A20 Line</H1>
+<P>Normally, we would expect the 80386 to wrap addresses in real mode. 
+Anticipating this, the AT motherboard designers routed the <CODE>A20</CODE> line 
+through the keyboard controller. Ordinarily, the controller blocks A20 from 
+reaching the memory chips. A special command to the keyboard controller can 
+unblock the A20, and another command will block it again later. This so-called 
+A20 gate is essential to accessing extended memory. 
+<P>
+<HR>
+Node:<A name=Selectors%20and%20Descriptors>Selectors and Descriptors</A>, 
+Next:<A href="http://members.tripod.com/protmode/prashant/index.html#About" 
+rel=next>About</A>, Previous:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Keyboard" 
+rel=previous>Keyboard</A>, Up:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Top" rel=up>Top</A> 
+<BR>
+<H1>7 Segment Selectors and Descriptors</H1>
+<UL>
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Segment%20Selectors">Segment 
+  Selectors</A>: Segment Selectors 
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Tables">Tables</A>: 
+  Tables Required in Protected Mode 
+  <LI><A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Descriptors">Descriptors</A>: 
+  Descriptors </LI></UL>
+<P>
+<HR>
+Node:<A name=Segment%20Selectors>Segment Selectors</A>, Next:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Tables" 
+rel=next>Tables</A>, Up:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Selectors%20and%20Descriptors" 
+rel=up>Selectors and Descriptors</A> <BR>
+<H2>7.1 Segment Selectors</H2>
+<P>Understanding segments is the key to understanding protected mode. Protected 
+mode segments have little in common with real-mode segments. A protected-mode 
+segment register holds a 16-bit segment selector (see the figure below). Unlike 
+real mode, the selector has nothing to do with the segment's location in memory. 
+Instead, the value in the register is an index into a table of segment 
+descriptors. Each descriptor defines one segment and determines where the 
+segment resides, the segment type, and other important parameters. <PRE><IMG alt=fig3.jpg src="Working in the Protected Mode Environment_soubory/fig3.jpg">
+</PRE>
+<P>The selector contains three fields. The lowest two bits (RPL) pertain to the 
+386's protection mechanism which is explained shortly. The next bit, TI, 
+determines which table of descriptors defines the segment. 
+<P>There are three segment descriptor tables: 
+<OL type=1>
+  <P></P>
+  <LI>The Global Descriptor Table (GDT) 
+  <LI>The Interrupt Descriptor Table (IDT) 
+  <LI>The Local Descriptor Table (LDT) </LI></OL>
+<P>Segment selectors never refer to the IDT. If TI is zero, the segment's 
+definition is in the GDT. If it is one, the LDT contains the definition. 
+<P>
+<HR>
+Node:<A name=Tables>Tables</A>, Next:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Descriptors" 
+rel=next>Descriptors</A>, Previous:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Segment%20Selectors" 
+rel=previous>Segment Selectors</A>, Up:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Selectors%20and%20Descriptors" 
+rel=up>Selectors and Descriptors</A> <BR>
+<H2>7.2 Tables Required in Protected Mode</H2>
+<P>Each descriptor table can hold upto 8192 descriptors. The <CODE>INDEX</CODE> 
+bits (bits 15 through bit 3) in the selector determine which descriptor to use. 
+<P>The GDTR and IDTR registers determine the location of the GDT and IDT 
+respectively. Each contains a 32-bit address and a 16-bit limit. The limit is 
+one less than the length of the table in bytes. The GDTR and IDTR are 48-bit 
+registers. The address is linear rather than a segment-offset pair. Each table 
+can contain upto 64KB or 8192 descriptors. 
+<P>The GDT, as its name implies, is global; even when the system is 
+multitasking, all tasks share the GDT. This is also true of the IDT - each task 
+uses the same one. If one task changes the GDT or IDT, all tasks are affected. 
+<P>The LDTR determines the location of the LDT. Unlike the GDT, each task 
+usually has its own LDT. Unlike the GDTR, the LDTR does not contain a 48-bit 
+address and limit. Instead, it holds a segment selector that must point to a 
+special entry in the GDT. This GDT entry points to the LDT. The GDT may contain 
+pointer to several LDTs. 
+<P>The IDT is analogous to the real-mode interrupt vector table. Each descriptor 
+defines the response to one of the 256 possible interrupts. Even though the IDT 
+can contain upto 8192 descriptors, any more than 256 is a waste. 
+<P>The figure below show the logical format of a basic descriptor table entry. 
+Also, other special types of descriptors are also shown. <PRE><IMG alt=fig4.jpg src="Working in the Protected Mode Environment_soubory/fig4.jpg">
+<IMG alt=fig5.jpg src="Working in the Protected Mode Environment_soubory/fig5.jpg">
+<IMG alt=fig6.jpg src="Working in the Protected Mode Environment_soubory/fig6.jpg">
+</PRE>
+<P>
+<HR>
+Node:<A name=Descriptors>Descriptors</A>, Previous:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Tables" 
+rel=previous>Tables</A>, Up:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Selectors%20and%20Descriptors" 
+rel=up>Selectors and Descriptors</A> <BR>
+<H2>7.3 Descriptors</H2>
+<P>Two fields in the segment descriptor are particularly interesting. The P bit 
+(bit 47) determines whether the segment is present. An operating system can 
+clear this bit to create a virtual segment. When a program tries to use a 
+virtual segment, the 386 generates an error. The operating system can then load 
+the segment from the disk and try again. When P is clear, bits 0 through 39 and 
+48 through 63 can contain any values. The operating system could store a disk 
+address here, for example. With any luck you won't need to swap 1-Gbyte of 
+segments in and out too often. Fortunately, the 386 provides a better way to 
+create virtual memory. 
+<P>The other interesting field is the A bit (bit 40). The 386 sets this bit when 
+any program <EM>writes</EM> to the segment. Our crude virtual memory system 
+might use this bit to decide whether it should write a segment to disk before 
+making it absent and reusing its space. 
+<P>You may wonder how a descriptor can specify a segment from one byte to 4GB 
+long. The limit field given is only 20 bits. This is where the G bit (bit 55) 
+comes into play. If G is zero, the limit field corresponds to one segment's 
+maximum legal offset (one less than its length). If G is one, however, the 386 
+shifts the limit field 12 places left to make a 32-bit limit. The 386 fills the 
+bottom 12-bits with ones. <PRE><EM>For example</EM>
+
+If a dscriptor has a limit field of one and G is one, the actual limit
+is 1FFFH. When G is one and limit is zero, the limit is FFFFH.
+</PRE>
+<P>This scheme allows us to specify a sgement with a length of less than 1 Mbyte 
+or a multiple of 4 Kbytes. When G is zero, the segment can range from one byte 
+to 1 Mbyte long. When G is one, the segment can range from 4 Kbytes to 4 Gbytes 
+in length (in 4 Kbytes steps). 
+<P>It is possible to create two or more descriptors that point to the same area 
+of memory. An operating system, for example, might load a file into a data 
+segment and jump to a code segment that starts in the same place. This process 
+is known as <DFN>aliasing</DFN>. The operating system must have some way of 
+loading the GDT and other tables. Therefore, it will usually have a data segment 
+alias to the GDT. Some systems set up a data segment that covers all 4GB of 
+memory. Tables can then be written directly with that data sgement. Operating 
+systems rarely allow user programs to access the GDT, IDT and other system 
+tables directly. 
+<P>The processor reserves the first slot of the GDT. The selector for this slot 
+is the <DFN>null selector</DFN>, and using it always causes an error. The null 
+selector's descriptors should be all zeros. Non-zero values work but you never 
+know ;-). 
+<P>
+<HR>
+Node:<A name=About>About</A>, Next:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Pending%20Work" 
+rel=next>Pending Work</A>, Previous:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Selectors%20and%20Descriptors" 
+rel=previous>Selectors and Descriptors</A>, Up:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Top" rel=up>Top</A> 
+<BR>
+<H1>8 About This Document</H1>
+<P>This document is written and maintained by <A 
+href="mailto:tr@midpec.com">Prashant TR</A>. Please write to the <A 
+href="mailto:pmode@egroups.com">PMode list</A> if you have questions, comments, 
+improvements, criticisms, etc. It will help improve this document. 
+<P>The following people have provided valuable comments and information and made 
+this document a successful one: <PRE><A href="mailto:alex.fru@mtu-net.ru">Alexei A Frounze</A>
+<A href="mailto:eliz@is.elta.co.il">Eli Zaretskii</A>
+</PRE>
+<P>
+<HR>
+Node:<A name=Pending%20Work>Pending Work</A>, Next:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Index" 
+rel=next>Index</A>, Previous:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#About" 
+rel=previous>About</A>, Up:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Top" rel=up>Top</A> 
+<BR>
+<H1>9 Other things to be done (Work in Progress)</H1><PRE><EM>Protected Mode privileges</EM>,
+<EM>How multitasking works</EM>,
+<EM>Traps faults and aborts</EM>,
+<EM>Memory Management Unit (MMU)</EM>,
+<EM>V86 mode</EM>,
+<EM>Interrupt handling in protected and V86 modes</EM>,
+<EM>Working in protected mode</EM>
+</PRE>
+<P>
+<HR>
+Node:<A name=Index>Index</A>, Previous:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Pending%20Work" 
+rel=previous>Pending Work</A>, Up:<A 
+href="http://members.tripod.com/protmode/prashant/index.html#Top" rel=up>Top</A> 
+<BR>
+<H1>10 Index</H1>
+<UL compact>
+  <LI>286: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Quick%20look">Quick 
+  look</A> 
+  <LI>32-bit registers: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>48-bit registers: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Tables">Tables</A> 
+
+  <LI>4GB of memory: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>640K limit: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Quick%20look">Quick 
+  look</A> 
+  <LI>80386: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Quick%20look">Quick 
+  look</A> 
+  <LI>80386 Registers: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#80386%20Registers">80386 
+  Registers</A> 
+  <LI>80386 special registers: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#80386%20Registers">80386 
+  Registers</A> 
+  <LI>8259 Programmable Interrupt Controller (PIC): <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Hardware%20Interrupts">Hardware 
+  Interrupts</A> 
+  <LI>Access bit: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Descriptors">Descriptors</A> 
+
+  <LI>Address wrap: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Keyboard">Keyboard</A> 
+
+  <LI>Addressing modes: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>Advantages: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>Aliasing: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Descriptors">Descriptors</A> 
+
+  <LI>Benefits: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>CGA text buffer: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>CLI instruction: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Hardware%20Interrupts">Hardware 
+  Interrupts</A> 
+  <LI>Context switch: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>CR0-CR3: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#80386%20Registers">80386 
+  Registers</A> 
+  <LI>Descriptors: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Descriptors">Descriptors</A> 
+
+  <LI>Disabling NMI: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Hardware%20Interrupts">Hardware 
+  Interrupts</A> 
+  <LI>Disk address: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Descriptors">Descriptors</A> 
+
+  <LI>DOS: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Quick%20look">Quick 
+  look</A> 
+  <LI>DR0-DR7: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#80386%20Registers">80386 
+  Registers</A> 
+  <LI>EMS board: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>Expanded Memory: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>Extended memory: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Keyboard">Keyboard</A> 
+
+  <LI>GDT Alias: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Descriptors">Descriptors</A> 
+
+  <LI>GDTR: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Tables">Tables</A> 
+
+  <LI>GDTR: Global Descriptor Table: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#80386%20Registers">80386 
+  Registers</A> 
+  <LI>General-purpose registers: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#80386%20Registers">80386 
+  Registers</A> 
+  <LI>Global Descriptor Table (GDT): <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Tables">Tables</A>, 
+  <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Segment%20Selectors">Segment 
+  Selectors</A> 
+  <LI>Granularity bit: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Descriptors">Descriptors</A> 
+
+  <LI>Hardware debugging: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>Hardware Interrupt: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Hardware%20Interrupts">Hardware 
+  Interrupts</A> 
+  <LI>Hardware Interrupts: Sources: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Hardware%20Interrupts">Hardware 
+  Interrupts</A> 
+  <LI>IDTR: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Tables">Tables</A> 
+
+  <LI>IDTR: Interrupt Descriptor Table: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#80386%20Registers">80386 
+  Registers</A> 
+  <LI>Interrupt Descriptor Table (IDT): <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Tables">Tables</A>, 
+  <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Segment%20Selectors">Segment 
+  Selectors</A> 
+  <LI>Interrupt priority: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Hardware%20Interrupts">Hardware 
+  Interrupts</A> 
+  <LI>Interrupt Service Routine (ISR): <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#RM%20Vector%20Table">RM 
+  Vector Table</A> 
+  <LI>Introduction: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Quick%20look">Quick 
+  look</A> 
+  <LI>IRET instruction: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#RM%20Vector%20Table">RM 
+  Vector Table</A> 
+  <LI>IRQ lines: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Hardware%20Interrupts">Hardware 
+  Interrupts</A> 
+  <LI>Keyboard and A20: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Keyboard">Keyboard</A> 
+
+  <LI>LDTR: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Tables">Tables</A> 
+
+  <LI>LDTR: Local Descriptor Table: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#80386%20Registers">80386 
+  Registers</A> 
+  <LI>Linear Address: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>List of Contributors: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#About">About</A> 
+  <LI>List of hardware interrupts: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Hardware%20Interrupts">Hardware 
+  Interrupts</A> 
+  <LI>Local Descriptor Table (LDT): <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Segment%20Selectors">Segment 
+  Selectors</A> 
+  <LI>Location of LDT: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Tables">Tables</A> 
+
+  <LI>Logical Address: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>Memory Management Unit (MMU): <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>Memory Protection: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>Multitasking: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>Newbies: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Top">Top</A> 
+  <LI>Non-maskable interrupt (NMI): <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Hardware%20Interrupts">Hardware 
+  Interrupts</A> 
+  <LI>Novices: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Top">Top</A> 
+  <LI>NULL selector: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Descriptors">Descriptors</A> 
+
+  <LI>Physical Address: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>PIC II: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Hardware%20Interrupts">Hardware 
+  Interrupts</A> 
+  <LI>Present bit: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Descriptors">Descriptors</A> 
+
+  <LI>Process Protection: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>Programming PICs: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Hardware%20Interrupts">Hardware 
+  Interrupts</A> 
+  <LI>Protected Mode: Introduction: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Quick%20look">Quick 
+  look</A> 
+  <LI>Real Mode: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Quick%20look">Quick 
+  look</A> 
+  <LI>Real mode segments: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Segment%20Selectors">Segment 
+  Selectors</A> 
+  <LI>Real Mode segments: An example: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#RM%20Addressing">RM 
+  Addressing</A> 
+  <LI>Real Mode: Interrupt Vector Table: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#RM%20Vector%20Table">RM 
+  Vector Table</A> 
+  <LI>Real Mode: Memory Organization: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#RM%20Addressing">RM 
+  Addressing</A> 
+  <LI>Real Mode: Offset: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#RM%20Addressing">RM 
+  Addressing</A> 
+  <LI>Real Mode: Segment overlap: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#RM%20Addressing">RM 
+  Addressing</A> 
+  <LI>Real Mode: Segmentation: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#RM%20Addressing">RM 
+  Addressing</A> 
+  <LI>Real Mode: Segments: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#RM%20Addressing">RM 
+  Addressing</A> 
+  <LI>Real-mode interrupt vector table: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Tables">Tables</A> 
+
+  <LI>Requestor Privilege Level (RPL): <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Segment%20Selectors">Segment 
+  Selectors</A> 
+  <LI>Segment descriptors: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Segment%20Selectors">Segment 
+  Selectors</A> 
+  <LI>Segment registers: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#80386%20Registers">80386 
+  Registers</A> 
+  <LI>Segment selectors: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Segment%20Selectors">Segment 
+  Selectors</A> 
+  <LI>Segment Selectors: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Segment%20Selectors">Segment 
+  Selectors</A> 
+  <LI>Segment type: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Segment%20Selectors">Segment 
+  Selectors</A> 
+  <LI>Segmentation: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>Table Indicator (TI): <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Segment%20Selectors">Segment 
+  Selectors</A> 
+  <LI>Tables in Protected Mode: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Tables">Tables</A> 
+
+  <LI>TR: Task Register: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#80386%20Registers">80386 
+  Registers</A> 
+  <LI>Undocumented: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>V86 Mode: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Quick%20look">Quick 
+  look</A> 
+  <LI>Virtual 8086 Mode: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Quick%20look">Quick 
+  look</A> 
+  <LI>Virtual memory: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Descriptors">Descriptors</A> 
+
+  <LI>Virtual Memory: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Advantages">Advantages</A> 
+
+  <LI>Virtual segment: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Descriptors">Descriptors</A> 
+
+  <LI>VM86 Mode: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Quick%20look">Quick 
+  look</A> 
+  <LI>What is Protected Mode?: <A 
+  href="http://members.tripod.com/protmode/prashant/index.html#Quick%20look">Quick 
+  look</A> </LI></UL>
+<HR>
+
+<H4>Footnotes</H4>
+<OL type=1>
+  <LI><A name=fn-1></A>
+  <P>In reality, this hardly happens. Most BIOSes and even DOS, sometimes, use 
+  instructions like <CODE>RETF 2</CODE>, making this INT-IRET sequence 
+  unreliable enough for simulating interrupts in V86 mode. A work-around is to 
+  use a special VM86 stack-frame which is takes care of all this.</P>
+  <LI><A name=fn-2></A>
+  <P>By definition the 8086 can't mask the NMI. On the PC, the motherboard, 
+  however, does have the ciruitary to prevent an NMI from occurring. You will 
+  rarely need to disable the NMI. On the ATs, the motherboard controls it with 
+  port 70H. Clearing bit 7 of this port will cut off NMI.</P></LI></OL>
+<HR>
+</BODY></HTML>

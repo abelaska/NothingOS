@@ -1,0 +1,21 @@
+;##########################################################################################
+;# Specifikace driveru
+;##########################################################################################
+;# version 1.1
+;##########################################################################################
+Range :
+   0000h..3FFFh - Blokove zarizeni
+   4000h..7FFFh - Znakove zarizeni
+   8000h..FFFFh - Softwareove drivery
+
+software drivers :
+   8000h..80FF  - Exec drivers
+   8100h        - Scancode 2 ASCII driver
+
+Drivers assigned numbers :
+   4010h - Consoles driver
+   4020h - Keyboard Driver
+   0010h - IDE driver
+   0020h - ATAPI driver
+   8000h - EBF EXEC driver
+

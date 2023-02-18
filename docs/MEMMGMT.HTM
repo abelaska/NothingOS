@@ -1,0 +1,314 @@
+<HEAD>
+<TITLE>Memory Management: Address Translation, Caching</TITLE>
+</HEAD>
+
+<BODY>
+<meta name="description" value="No Title">
+<meta name="keywords" value="intro">
+<meta name="resource-type" value="document">
+<meta name="distribution" value="global">
+<P>
+<h2>Memory Management</h2>
+
+<h4>Relevant Reading</h4>
+
+Chapter 3 of Tanenbaum. These lectures approach memory management
+in a slightly different order, but the basic content is similar
+to Tanenbaum. <p>
+
+<h4>Outline</h4>
+<ul>
+<li> What is memory management?
+<li> Address translation mechanisms and their tradeoffs
+<li> Improving performance of address translation
+<li> Demand paging
+</ul>
+
+<h4>The OS memory manager</h4>
+
+Conceptually, the process/thread subsystem in an OS is to the CPU
+what the <em>memory manager</em> is to physical memory.
+A memory manager:
+<ul>
+<li> Provides abstraction of a protected address space through translation.
+<li> Provides the abstraction of large <em>virtual</em> address 
+spaces, effectively liberating programmers from physical memory constraints.
+</ul>
+Note that these are two independent ideas, so we
+study them separately.
+Several ways to approach this: we study address translation first
+and virtual memory second. <p>
+
+<h4>Address Translation Mechanisms</h4>
+
+Address translation for protection: untranslated addresses allow
+user programs access to OS memory and other user memory.
+Obvious solution: can implement protection in memory hardware
+(e.g. if processor is in user mode, can only access this part
+of memory), but that can be expensive. 
+When multiple processes' address spaces co-resident in 
+memory, need for <em>relocation</em>, relatively easily solved. <p>
+
+Generic address translation: hardware assisted, OS managed.
+MMU does translation based on table loaded by OS.
+Several approaches have been tried. We discuss these
+approaches and their advantages and disadvantages. <p>
+
+Already looked at a <em>base-and-bounds</em> approach which uses
+the x86 segmented memory (fixed bounds).
+Idea: each process' memory reference augmented by a base
+register within bounds.
+MMU does add/compare of virtual address.
+What does OS have to do to load new program? Find
+large enough chunk of memory (what heuristics? fragmentation, compaction
+what about the effects of those heuristics and the need for compaction) 
+and then set the base and bounds appropriately. 
+What about changing size of process (extend heap or stack)?
+Protection: can only access things within process' base and
+base+bounds.
+(Obviously, only OS can change base/bounds).
+Problems: text only sharing difficult, extending stack and
+heap difficult, convoluted memory management.  <p>
+
+One way to do sharing is to allow each process' virtual address space
+to be divided into segments. Then, we can load different
+segments at different places in physical memory.
+What happens at gaps: if program accesses gaps, error, unless
+it is the stack segment, which the OS grows <em>on demand</em>.
+What does OS do when loading new program?
+Hardware needs a segment table, or a pointer to a location
+in memory containing segment table.
+Example of segmentation. Advantages: can do sharing of code
+segments easily, but we may need to do fancy memory
+allocation schemes. 
+Efficient for sparse address spaces (only as many entries as there
+are segments).
+Basic problem: growing segments such as stack. <p>
+
+Paging. Divide up memory into pages, then
+represent entire virtual address space as a collection of pages.
+Allocation is in units of pages (can use a simple bitmap, couldn't
+do that with segments since a segment was contiguous physical memory), 
+and can still share segments.
+Hardware needs two registers: pointer to page table and page table size.
+Example of paged address space. Size of page is crucial: small page
+increases size of table, large page suffers from internal fragmentation.
+Easy to share, inefficient for sparse, large address spaces. <p>
+
+Efficiency in sparse address spaces. Using multi-level translation,
+lowest level is paging and higher levels are segmented.
+In two level, part of address determines segment, and then part
+of address determines page table.
+Segment tables small, page tables have to be stored in memory.
+Example of paged segmentation: easy memory allocation, sharing,
+efficient, at the cost of an additional lookup. <p>
+
+Such a scheme has one page table per segment. Can be many page
+tables. For a reason we study later, we can actually put the
+page tables in memory pages in a separate segment (called the
+system page table) which is translated, but inaccessible to users.
+The system page table is in physical memory. Can have upto
+three memory references to resolve a single address. <p>
+
+<h4>Improving the performance of address translation</h4>
+
+<h5>Caching principles</h5>
+
+Very commonly used performance improvement principle. 
+Keep recently accessed stuff around, so we can quickly
+access copy. Motivates the development of a memory
+hierarchy: upper levels are expensive per byte, but fast.
+So we can keep less frequently accessed, large stuff lower
+down in hierarchy and more frequently/recently accessed
+stuff in faster memory. <p>
+
+Terms: <em>hit ratio</em> and <em>expected access time</em>.
+How often do you find things in the cache? What is the
+expected access time? More things in cache, larger hit ratio
+but more access time for hit. Engineering tradeoffs.
+Crucial observations about program behavior that allow us
+to have smaller caches with high hit rates: <em>locality</em>
+(both temporal and spatial). <p>
+
+<h5>Translation Lookaside Buffers</h5>
+
+Caching can be applied to address translation. Recall that to
+resolve one virtual address, we needed 2-3 memory accesses.
+If we can cache the virtual/physical mapping in MMU, things
+would work OK. Access times are small. How do we find out
+whether there is a hit or a miss? Depends on TLB organization:
+similar issues as instruction and data caches in processor
+architectures. <p>
+
+What does TLB entry contain: part of virtual page number, 
+corresponding physical page number, valid/invalid bit.
+Can have direct mapped TLBs: basically hash table of some
+part of virtual page number. Can have hash collisions, so choice
+of hash function critical.
+To reduce collisions, can have set associative TLBs. 
+Algorithms to replace, for the set associative case, later.
+<p>
+
+How does TLB get populated? Whenever MMU incurs cache miss,
+we trap to OS, so OS can fill in the translation. 
+OS can also flush entire TLB or parts thereof (hardware dependent). 
+When does TLB change?  Context switch! (Unless we can associate 
+process ID with entry). Also, if the virtual mapping changes (e.g. 
+when a page is added or removed). <p>
+
+<h4>Demand Paged Virtual Memory</h4>
+
+So far, we have assumed that the result of a translation is always
+in physical memory.
+Not always necessary, given that most programs exhibit spatial
+<em>locality</em>: that is, at any given instant in time, program
+instruction and data references tend to be to only to a
+small, slowly changing, <em>working set</em>.
+(already argued that programs exhibit temporal <em>locality</em>
+in referencing virtual addresses). <p>
+
+Because of this locality, can use 
+<em>physical memory to cache disk-based program code and data</em>.
+Main benefit: illusion of large virtual address space, allowing
+OS to run more programs than will simultaneously fit in memory. <p>
+
+<h5>Demand Paging Algorithm</h5>
+
+To implement demand paging, add an extra bit to a page table
+entry (<samp>valid</samp>) to indicate whether the corresponding
+page frame is in memory or not.
+If page frame corresponding to page not in memory 
+(<samp>invalid</samp>), then:
+<ul>
+<li> MMU traps to OS (<em>page fault</em>). As usual, page fault
+trap handler switches to kernel mode, saves PC, registers etc.
+<li> Runs page fault replacement algorithm to find old page.
+<li> If old page has been modified, write it out to a separate
+partition on disk.
+<li> Update the page table entry (entries!) that referenced
+that old page (i.e. reset their <samp>valid</samp> bit).
+<li> Load new page into memory from disk (if necessary).
+<li> Update new page table entry with pointer to physical
+frame.
+<li> Restart faulting thread/process.
+</ul> <p>
+
+On some machines, such as the MIPS, the MMU only has a software
+loaded TLB. When a fault happens with this TLB, we do a similar
+sequence of operations. <p>
+
+Initially, a program's pages all faulted in.
+Page fault handled transparently. Two issues.  Restarting thread in
+the middle of a complex instruction. What algorithm is best for page
+replacement? How do you implement that algorithm quickly (remember,
+algorithm is run in interrupt handler)? <p>
+
+<h5>Restarting Faulted Thread</h5>
+
+Several problems. Some instructions have multiple effects: update
+a memory location and change the value of a register. Can
+fault midway: how do we re-start instruction?
+Some processors allow pipelined instructions: what happens if
+a page fault happens mid-way through an instruction.
+Complex memory move instructions. <p>
+
+<h5>Page Replacement Policies</h5>
+
+Different caching mechanisms can use different caching policies.
+For TLBs we saw that in some cases, the replacement was
+determined by the choice of the TLB organization. <p>
+
+What are the goals of a page replacement policy? Policy
+should minimize page faults globally. 
+Can this be achieved:
+as we will see, a bit like the goal of trying to find an
+optimal scheduling policy. <p>
+
+Will a random page replacement policy work? 
+Another possible policy is FIFO: keeps each page
+in memory for the same number of page faults.
+Doesn't distinguish <em>usage</em>: heavily used
+pages as likely to be thrown out. <p>
+
+Key observation: some page faults inherent because of fixed
+memory size, some page faults caused because page was replaced
+and immediately re-used. Optimal page replacement? MIN:
+replace page which will be next referenced furthest in
+the future. Approximation to MIN: LRU, replace page that
+was used furthest in the past.
+Examples comparing performance of FIFO, MIN and LRU.
+Are the number of page faults reduced if physical memory
+is increased (Belady's anomaly)?
+<p>
+
+<h5>LRU Implementation</h5>
+
+Best possible implementation. Keep of use timestamp and order pages
+by timestamp. Issues: entry size, at each memory reference need
+to update page. Not really feasible.
+<p>
+
+Most UNIX systems implement something called the clock algorithm.
+Replaces a page referenced sometime in the past, not necessarily
+oldest such page.
+Suppose hardware supports <strong>use</strong> bit
+per physical page frame, which is set everytime page
+frame is referenced.
+If use bit is not set, page not referenced in a while.
+Clock algorithm sweeps page frames (assume page frames arranged
+in a circle) on a page fault to find first page whose use bit
+is not set (if use bit is set, clear it). <p>
+
+Will it loop indefinitely (will, after one cycle find an unused
+page)? What determines how quickly the hand moves?
+Basically, use bit partitions pages into young and old. Some
+old page gets replaced. <p>
+
+Variant: In addition to use bit, maintain a count per page. Don't
+replace it even if use bit is not set, until the clock hand
+has swept by N times. Will, after N iterations in the worst
+case, find a page. How to select N: large N comes near timestamp,
+but can take a long time to find a page.
+Another variant: give dirty pages an additional chance. <p>
+
+<h5>Other Implementation Issues</h5>
+
+Four bits: read-only, modified, use and valid. Can we reduce
+the number of bits? (Remember, these bits need hardware support
+and some hardware may not provide that). <p>
+
+Can <em>emulate</em> modified bit using read-only bit.
+Maintain two lists: a list of modified page frames, and a list
+of all page frames.
+Initially, page frame starts out read-only. On write access,
+trap happens and page inserted in modified list (logically
+marked modified). Clock checks if page is in modified list. <p>
+
+Same way, can emulate use bit with valid bit. <p>
+
+Need a map of page frame descriptors, for the clock algorithm
+to work. <p>
+
+<h5>Thrashing</h5>
+
+Each program references a small subset of its pages at
+any instant. If those pages currently required by all
+programs don't fit into memory, can have <strong>thrashing</strong>.
+Characterized by frequent page faults: caused by replacement
+of pages that are immediately needed again. 
+Here caching breaks down differently: we have program locality,
+but too many programs.
+Average memory reference time goes up.
+No way to know this a priori. <p>
+
+Users can modify program behavior by re-writing programs,
+splitting tasks.
+How can the OS detect this?
+Basic idea of a <strong>working set</strong>: set of
+pages that process currently needs. 
+If combined process working sets are near physical memory,
+stop forking new processes.
+How to determine working set: pages referenced over time T.
+What factors determine the selection of time T? <p>
+
+</body>

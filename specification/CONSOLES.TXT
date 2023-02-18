@@ -1,0 +1,147 @@
+Internal Consoles Driver Specification
+Version 1.1
+10/03/2001
+
+------------------------------------------------------------------------------------------------------
+Prehled Fci :
+--------------------------------------------------------------------------------------------------
+   FCE         Nazev fce                  Popis
+00000000h       INIT               Inicializace driveru
+00000001h       DONE               Deinicializace driveru
+00000002h       READ               Standardni cteni ze znakoveho zarizene - neimplementovano
+00000003h       WRITE              Standardni zapis do znakoveho zarizeni - ANSI standards
+00000010h       Scroll             Posune viditelnou oblast virtualni obrazovky na dannou pozici
+00000011h       ScrollDelta        Posune viditelnou oblast virtualni obrazovky o +/- hodnotu
+00000012h       Clear              Vymaze virtualni obrazovku
+00000013h       Show_Cursor        Zobrazi kursor
+00000014h       Hide_Cursor        Skryje kursor
+00000015h       GotoXY             Premisti kursor na dannou pozici
+00000016h       GetXY              Zjisti adresu kursoru v konzoli
+00000017h       AddLine            Prida prazdny radek
+00000018h       Switch             Prepne na tuto konzolu
+00000019h       Exist_Console      Zjisti, existuje-li danna konzola
+0000001Ah       GetActive_Console  Navrati cislo aktivni konzoly
+0000001Bh       SetAttrib          Nastavi atributy vypisu na danne konzole
+0000001Ch       GetCharRedirAddr   Navrati adresu obsluzne rutiny danneho znaku
+0000001Dh       SetCharRedirAddr   Nastavi adresu obsluzne rudiny danneho znaku
+
+
+------------------------------------------------------------------------------------------------------
+Vstupy / Vystupy Funkci
+------------------------------------------------------------------------------------------------------
+00000000h .... INIT ............. Vstup  : Neni
+                                  Vystup : Neni
+00000001h .... DONE ............. Vstup  : Neni
+                                  Vystup : Neni
+00000002h .... READ ............. Neimplementovana
+00000003h .... WRITE ............ Vstup  : DL - Znak na vypis
+                                  Vystup : Neni
+00000010h .... Scroll ........... Vstup  : EDX - Cislo radku, na ktery se ma premistit zacatek zobrazovane oblasti
+                                  Vystup : Neni
+00000011h .... ScrollDelta ...... Vstup  : EDX - O kolik radku posunout zobrazovanou cast obrazovky (+/-)
+                                  Vystup : Neni
+00000012h .... Clear ............ Vstup  : Neni
+                                  Vystup : Neni
+00000013h .... Show_Cursor ...... Vstup  : Neni
+                                  Vystup : Neni
+00000014h .... Hide_Cursor ...... Vstup  : Neni
+                                  Vystup : Neni
+00000015h .... GotoXY ........... Vstup  : ECX - X souradnice
+                                           EDX - Y souradnice
+                                  Vystup : Neni
+00000016h .... GetXY ............ Vstup  : Neni
+                                  Vystup : ECX - X souradnice
+                                           EDX - Y souradnice
+00000017h .... AddLine .......... Vstup  : Neni
+                                  Vystup : Neni
+00000018h .... Switch ........... Vstup  : Neni
+                                  Vystup : Neni
+00000019h .... Exist_Console .... Vstup  : Neni
+                                  Vystup : EAX - 00000000h - Existuje
+                                               - FFFFFFFFh - Neexistuje
+0000001Ah .... GetActive_Console..Vstup  : Neni
+                                  Vystup : EAX - Cislo aktivni konzoly
+0000001Bh .... SetAttrib ........ Vstup  : DL - Attribut
+                                  Vystup : Neni
+0000001Ch .... GetCharRedirAddr.. Vstup  : DL - cislo znaku
+                                  Vystup : (CX:EDI) - Far ptr na obsluhu
+0000001Dh .... SetCharRedirAddr.. Vstup  : DL - cislo znaku
+                                           (CX:EDI) - Far ptr na obsluhu
+
+------------------------------------------------------------------------------------------------------
+FCE 0000001C a 0000001D
+------------------------------------------------------------------------------------------------------
+Tyto fce se da pouzit na premapovani znaku, znakovych sad a podobne. Fce write
+pri vypisu jakehokoliv znaku zkontroluje tabulku address presmerovani znaku,
+a najde-li v ni zanzam o dannem znaku, zavola rutinu associovanou dannym znakem.
+Rutina se vola call far, takze musi budto lezet code segmentu kernelu, nebo
+vstupem fce 00000001Dh v CX necht je call gate. Resetovani vypisu danneho znaku
+se provede zavolanim fcd 0000001D s nulovymi parametry CX a EDI.
+Napr. chceme-li zakazat vypisovani ANSI retezcu, staci premapovat, nebo resetovat
+redirect zaznam pro znak ESC - 27
+U znaku '\' neexistuje moznost resetovani, pouze presmerovani
+
+Standardne jsou presmerovany znaky
+           8  - krok zpet
+           9  - horizontalni tabulator
+           10 - odradkovani           
+           11 - verticalni tabulator
+           27 - zacatek kontrolni sekvence ANSI
+-----------------------------------------------------------------------------------------------------
+FCE 00000003h - WRITE - podporovane sekvence :
+------------------------------------------------------------------------------------------------------
+ Standardni sekvence :
+     \n         odradkovani
+     \t         horizontalni tabulator
+     \v         vertikalni tabulator
+     \b         navrat o jeden znak zpet
+     \r         navrat na zacatek radku
+     \\         vypis znaku '\'
+     \'         vypis znaku '''
+     \?         vypis znaku '?'
+     \"         vypis znaku '"'
+     \ooo       vypis znaku s osmickovym kodem ooo - musi byt vzdy 3 cisla
+
+ ANSI sekvence :
+ (E = ESC character - budto vypsat primo na obrazovku znak 27, nebo pres \033)
+     E[nA       presun kursoru o n radku nahoru
+     E[nB       presun kursoru o n radku dolu
+     E[nC       presun kursoru o n znaku dopredu (neprejde pres konec radku)
+     E[nD       presun kursoru o n znaku dozadu  (neprejde pres zacatek radku)
+     E[n`       presun kursoru na enty znak na aktualnim radku
+     E[na       presun kursoru o n znaku dopredu (neprejde pres konec radku)
+     E[nd       presun kursoru na enty radek
+     E[ne       presun kursoru o n radku dolu
+     E[nF       presun kursoru o n radku nahoru, a na zacatek radku
+     E[nE       presun kursoru o n radku dolu, a na zacatek radku
+     E[y;xH     presun kursoru na pozici x,y (neni-li zadana zadna hodnota, nastavi se kursor na hodnoty Home)
+     E[y;xf     presun kursoru na pozici x,y
+     E[nZ       presun kursoru o n tabulatorovych skoku dozadu
+     E[nP       smazani n znaku, vcetne kursoru
+     E[nJ       smazani casti obrazovky
+                       n = 0  - od kursoru do konce virtualni obrazovky
+                       n = 1  - od zacatku virtualni obrazovky do pozice kursoru
+                       n = 2  - celou virtualni obrazovku
+     E[nK       smazani casti radku
+                       n = 0  - od kursoru do konce radku
+                       n = 1  - od zacatku radku do pozice kursoru
+                       n = 2  - cely radek
+     E[nX       smazani n znaku, vcetne kursoru
+     E[n;..n;m  nastaveni atributu - je mozne davat vic nezli jeden parameter, pak se atributy slucuji
+                       n =  0 normal attribute (all off)
+                       n =  2 zesedne
+                       n =  5 blink
+                       n = 3X set foreground color
+                       n = 4X set background color
+                            X = 0 black
+                            X = 1 red
+                            X = 2 green
+                            X = 3 brown
+                            X = 4 blue
+                            X = 5 magenta
+                            X = 6 cyan
+                            X = 7 white
+                 napr \033[0;031;040;2m nastavi atributy na cervenou barvu, cerne pozadi, nejasne barvy
+      E[s        Ulozeni pozice kursoru
+      E[u        Obnoveni pozice kursoru
+

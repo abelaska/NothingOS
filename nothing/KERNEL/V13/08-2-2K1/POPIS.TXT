@@ -1,0 +1,1 @@
+prvni verze s alokovani pres page fault :)
